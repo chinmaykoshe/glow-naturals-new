@@ -12,6 +12,7 @@ import Checkout from "./pages/Checkout";
 import Profile from "./pages/Profile";
 import ForgetPassword from "./pages/ForgetPassword";
 import ResetPassword from "./pages/ResetPassword";
+import ProductDetail from "./pages/ProductDetail";
 import Navig from "./components/Navig";
 import Footer from "./components/Footer";
 import Cart from "./components/Cart";
@@ -29,6 +30,7 @@ import AdminOrders from "./admin/pages/AdminOrders";
 import AdminUsers from "./admin/pages/AdminUsers";
 import AdminHero from "./admin/pages/AdminHero";
 import AdminMessages from "./admin/pages/AdminMessages";
+import AdminReviews from "./admin/pages/AdminReviews";
 
 function AppContent() {
   const { isCartOpen, setIsCartOpen } = useCart();
@@ -46,6 +48,8 @@ function AppContent() {
         <Route path="/" element={<Home />} />
         <Route path="/shop" element={<Shop />} />
         <Route path="/categories" element={<Categories />} />
+        <Route path="/:category/:productName" element={<ProductDetail />} />
+        <Route path="/product/:id" element={<ProductDetail />} /> {/* Keep for backward compatibility */}
         <Route path="/new-arrivals" element={<NewArrivals />} />
         <Route path="/best-sellers" element={<BestSellers />} />
         <Route path="/about" element={<About />} />
@@ -69,6 +73,7 @@ function AppContent() {
           <Route path="users" element={<AdminUsers />} />
           <Route path="hero" element={<AdminHero />} />
           <Route path="messages" element={<AdminMessages />} />
+          <Route path="reviews" element={<AdminReviews />} />
         </Route>
       </Routes>
 

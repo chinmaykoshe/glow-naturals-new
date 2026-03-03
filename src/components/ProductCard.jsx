@@ -1,5 +1,5 @@
-import React from "react";
 import { useCart } from "../context/CartContext";
+import { Link } from "react-router-dom";
 
 function ProductCard({ product }) {
     const { addToCart, setIsCartOpen } = useCart();
@@ -13,6 +13,7 @@ function ProductCard({ product }) {
         image,
         description,
         bestseller,
+        newArrival,
         tag
     } = product;
 
@@ -26,7 +27,10 @@ function ProductCard({ product }) {
 
     const displayPrice = retailPrice || price;
     const displayImage = getCleanImage(imageUrl || image);
-    const displayTag = bestseller ? "Bestseller" : tag;
+    const displayTag = bestseller ? "Bestseller" : (newArrival ? "New Arrival" : tag);
+
+    // URL friendly format
+    const productUrl = `/${(product.category || "all").toLowerCase().replace(/\s+/g, '-')}/${name.toLowerCase().replace(/\s+/g, '-')}`;
 
     const handleAddToCart = (e) => {
         e.preventDefault();
@@ -38,7 +42,7 @@ function ProductCard({ product }) {
     return (
         <div key={id} className="group flex flex-col bg-white border border-gray-100 p-0 rounded-none transition-all duration-300 hover:shadow-lg">
             {/* Image Container */}
-            <div className="relative aspect-[4/3] sm:aspect-square overflow-hidden rounded-none bg-gray-50 mb-2 sm:mb-3">
+            <Link to={productUrl} className="relative aspect-[4/3] sm:aspect-square overflow-hidden rounded-none bg-gray-50 mb-2 sm:mb-3 block">
                 {displayTag && (
                     <span className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-gray-900 text-white px-2.5 sm:px-3 py-1 text-[9px] sm:text-[8px] font-bold uppercase tracking-[0.15em] sm:tracking-widest z-10 rounded-none">
                         {displayTag}
@@ -50,14 +54,16 @@ function ProductCard({ product }) {
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     onError={(e) => { e.target.src = "/default-images/generic.svg" }}
                 />
-            </div>
+            </Link>
 
             {/* Content Container */}
             <div className="p-4 sm:p-5 md:p-6 space-y-3 sm:space-y-4">
                 <div className="space-y-1.5">
-                    <h3 className="text-base sm:text-sm md:text-base font-bold text-gray-900 uppercase tracking-tight leading-tight whitespace-normal break-words">
-                        {name}
-                    </h3>
+                    <Link to={productUrl}>
+                        <h3 className="text-base sm:text-sm md:text-base font-bold text-gray-900 uppercase tracking-tight leading-tight whitespace-normal break-words hover:text-admin-primary transition-colors">
+                            {name}
+                        </h3>
+                    </Link>
                     <p className="text-xs sm:text-[10px] md:text-[11px] text-gray-500 font-medium line-clamp-2 leading-relaxed min-h-9 sm:h-10">
                         {description || "A natural care product for your daily routine."}
                     </p>

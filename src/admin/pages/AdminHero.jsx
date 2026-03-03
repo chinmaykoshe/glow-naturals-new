@@ -22,6 +22,14 @@ function AdminHero() {
         if (docSnap.exists()) {
             setHero(docSnap.data());
         }
+        setHero(prev => ({
+            ...prev,
+            bgImage: prev.bgImage || '',
+            title: prev.title || '',
+            subtitle: prev.subtitle || '',
+            buttonLabel: prev.buttonLabel || '',
+            buttonHref: prev.buttonHref || ''
+        }));
         setLoading(false);
     };
 
@@ -36,20 +44,20 @@ function AdminHero() {
     };
 
     return (
-        <div className="space-y-12">
+        <div className="space-y-8 md:space-y-12 min-h-[90vh] pb-64">
             <div>
                 <span className="text-admin-primary text-[10px] font-bold uppercase tracking-[0.5em] block mb-2">Aura</span>
-                <h1 className="text-5xl font-serif text-gray-900 tracking-tighter">Hero Section</h1>
+                <h1 className="text-4xl md:text-5xl font-serif text-gray-900 tracking-tighter">Hero Section</h1>
             </div>
 
-            <form onSubmit={handleSave} className="bg-white p-16 border border-gray-100 space-y-12 shadow-sm">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <form onSubmit={handleSave} className="bg-white p-6 md:p-16 border border-gray-100 space-y-10 md:space-y-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
                     <div className="space-y-2 border-b border-gray-100 pb-2">
                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Main Headline (H1)</label>
                         <input
                             required
                             type="text"
-                            className="w-full bg-transparent py-2 text-2xl font-serif text-gray-900 focus:outline-none"
+                            className="w-full bg-transparent py-2 text-xl md:text-2xl font-serif text-gray-900 focus:outline-none"
                             value={hero.title}
                             onChange={(e) => setHero({ ...hero, title: e.target.value })}
                             placeholder="Pure Botanical Luxury"
@@ -66,7 +74,7 @@ function AdminHero() {
                             placeholder="https://images.unsplash.com/..."
                         />
                     </div>
-                    <div className="col-span-2 space-y-2 border-b border-gray-100 pb-2">
+                    <div className="md:col-span-2 space-y-2 border-b border-gray-100 pb-2">
                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Description (P)</label>
                         <textarea
                             required
@@ -89,7 +97,7 @@ function AdminHero() {
                         />
                     </div>
                     <div className="space-y-2 border-b border-gray-100 pb-2">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">CTA Button Redirect (URL/Path)</label>
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">CTA Button Redirect</label>
                         <input
                             required
                             type="text"
@@ -101,9 +109,9 @@ function AdminHero() {
                     </div>
                 </div>
 
-                <div>
-                    <button type="submit" className="bg-admin-primary text-white px-20 py-5 font-bold text-[10px] uppercase tracking-[0.3em] hover:bg-gray-900 transition-all shadow-lg">
-                        Update Galactic Experience
+                <div className="pt-4">
+                    <button type="submit" className="w-full md:w-auto bg-admin-primary text-white px-12 md:px-20 py-4 md:py-5 font-bold text-[10px] uppercase tracking-[0.3em] hover:bg-gray-900 transition-all">
+                        Update Portal Atmosphere
                     </button>
                 </div>
             </form>
@@ -111,7 +119,7 @@ function AdminHero() {
             {hero.bgImage && (
                 <div className="space-y-4">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Atmosphere Preview</p>
-                    <div className="aspect-[21/9] w-full bg-gray-100 overflow-hidden border border-gray-100">
+                    <div className="aspect-video md:aspect-[21/9] w-full bg-gray-100 overflow-hidden border border-gray-100">
                         <img src={hero.bgImage} className="w-full h-full object-cover" alt="" />
                     </div>
                 </div>

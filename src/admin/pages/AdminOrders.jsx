@@ -90,13 +90,14 @@ function AdminOrders() {
     };
 
     return (
-        <div className="space-y-12 relative min-h-[80vh]">
+        <div className="space-y-8 md:space-y-12 relative min-h-[90vh] pb-64">
             <div>
                 <span className="text-admin-primary text-[10px] font-bold uppercase tracking-[0.5em] block mb-2">Management</span>
-                <h1 className="text-5xl font-serif text-gray-900 tracking-tighter">Orders</h1>
+                <h1 className="text-4xl md:text-5xl font-serif text-gray-900 tracking-tighter">Orders</h1>
             </div>
 
-            <div className="bg-white border border-gray-100 rounded-none overflow-hidden">
+            {/* Desktop Table - Hidden on Mobile */}
+            <div className="hidden md:block bg-white border border-gray-100 rounded-none overflow-hidden">
                 <table className="w-full text-left border-collapse">
                     <thead className="bg-gray-50 border-b border-gray-100">
                         <tr>
@@ -112,7 +113,9 @@ function AdminOrders() {
                             <tr key={order.id} className="hover:bg-gray-50/50 transition-all group">
                                 <td className="px-8 py-5 font-mono text-[10px] text-gray-400">#{order.id.slice(0, 10).toUpperCase()}</td>
                                 <td className="px-8 py-5">
-                                    <div className="text-sm font-bold text-gray-900">{order.customerName || `${order.firstName || ''} ${order.lastName || ''}`}</div>
+                                    <div className="text-sm font-bold text-gray-900">
+                                        {order.customerName || (order.email ? order.email.split('@')[0] : 'Customer')}
+                                    </div>
                                     <div className="text-[10px] text-gray-400 uppercase tracking-tighter">{order.email}</div>
                                 </td>
                                 <td className="px-8 py-5 text-sm font-bold text-gray-900">₹{(order.totalAmount || order.total)?.toLocaleString()}</td>
@@ -141,30 +144,70 @@ function AdminOrders() {
                         ))}
                     </tbody>
                 </table>
-                {orders.length === 0 && !loading && (
-                    <div className="p-32 text-center text-gray-300">
-                        <p className="font-serif italic text-2xl">No orders found.</p>
-                    </div>
-                )}
             </div>
 
-            {/* Order Details Sliding Modal */}
+            {/* Mobile Card View - Visible only on Small Screens */}
+            <div className="md:hidden space-y-4">
+                {orders.map((order) => (
+                    <div key={order.id} className="bg-white border border-gray-100 p-5 space-y-4">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <p className="text-[10px] font-mono text-gray-400 uppercase tracking-widest mb-1">#{order.id.slice(0, 10).toUpperCase()}</p>
+                                <p className="font-bold text-gray-900">
+                                    {order.customerName || (order.email ? order.email.split('@')[0] : 'Customer')}
+                                </p>
+                                <p className="text-[10px] text-gray-400 uppercase">{order.email}</p>
+                            </div>
+                            <span className={`text-[8px] font-bold px-2 py-1 uppercase tracking-widest ${order.status === 'delivered' ? 'bg-green-50 text-admin-primary' :
+                                order.status === 'processing' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'
+                                }`}>
+                                {order.status || 'pending'}
+                            </span>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                            <p className="font-bold text-gray-900">₹{(order.totalAmount || order.total)?.toLocaleString()}</p>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setSelectedOrder(order)}
+                                    className="p-2 text-gray-400 hover:text-admin-primary"
+                                >
+                                    <HiOutlineEye size={20} />
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(order.id)}
+                                    className="p-2 text-gray-400 hover:text-red-500"
+                                >
+                                    <HiOutlineTrash size={20} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {orders.length === 0 && !loading && (
+                <div className="py-20 md:p-32 text-center text-gray-300">
+                    <p className="font-serif italic text-xl">No orders found.</p>
+                </div>
+            )}
+
+            {/* Order Details Sliding Modal - Responsive */}
             {selectedOrder && (
                 <div className="fixed inset-0 z-[100] flex justify-end">
                     <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setSelectedOrder(null)} />
-                    <div className="relative w-full max-w-lg bg-white h-full shadow-2xl flex flex-col animate-slide-in-right">
-                        <div className="p-8 border-b border-gray-100 flex justify-between items-center">
+                    <div className="relative w-full md:max-w-lg bg-white h-full shadow-2xl flex flex-col animate-slide-in-right">
+                        <div className="p-6 md:p-8 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 md:relative z-10">
                             <div>
                                 <span className="text-admin-primary text-[10px] font-bold uppercase tracking-[0.5em] block mb-1">Details</span>
-                                <h2 className="text-2xl font-serif text-gray-900">Order #{selectedOrder.id.slice(0, 10).toUpperCase()}</h2>
+                                <h2 className="text-xl md:text-2xl font-serif text-gray-900">Order #{selectedOrder.id.slice(0, 10).toUpperCase()}</h2>
                             </div>
                             <button onClick={() => setSelectedOrder(null)} className="text-gray-400 hover:text-gray-900 transition-all p-2">
                                 <HiOutlineX size={24} />
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-8 space-y-12">
-                            {/* Status Orchestration */}
+                        <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-10 md:space-y-12">
                             {/* Status Orchestration */}
                             <div className="space-y-6">
                                 <div className="flex justify-between items-baseline">
@@ -172,42 +215,42 @@ function AdminOrders() {
                                     {isActionLoading && <span className="text-[9px] font-bold text-admin-primary animate-pulse uppercase tracking-widest">Updating...</span>}
                                 </div>
 
-                                <div className="flex gap-2">
+                                <div className="flex flex-wrap gap-2">
                                     {['pending', 'shipped', 'delivered'].map((s) => (
                                         <button
                                             key={s}
                                             disabled={isActionLoading || s === 'shipped'}
                                             onClick={() => updateStatus(selectedOrder.id, s)}
-                                            className={`flex-1 py-3 text-[9px] font-bold uppercase tracking-widest border transition-all ${selectedOrder.status === s ? 'bg-admin-primary border-admin-primary text-white' : 'bg-white border-gray-100 text-gray-400 hover:border-admin-primary'} ${s === 'shipped' ? 'cursor-default opacity-80' : ''}`}
+                                            className={`flex-1 min-w-[30%] py-3 text-[9px] font-bold uppercase tracking-widest border transition-all ${selectedOrder.status === s ? 'bg-admin-primary border-admin-primary text-white' : 'bg-white border-gray-100 text-gray-400 hover:border-admin-primary'} ${s === 'shipped' ? 'cursor-default opacity-80' : ''}`}
                                         >
-                                            {s === 'shipped' ? 'Handed Over' : s}
+                                            {s === 'shipped' ? 'Handover' : s}
                                         </button>
                                     ))}
                                 </div>
 
                                 {selectedOrder.status === 'pending' && (
-                                    <div className="space-y-4 bg-gray-50 p-6 border border-gray-100">
+                                    <div className="space-y-4 bg-gray-50 p-5 md:p-6 border border-gray-100">
                                         <div className="flex items-center gap-2 mb-2">
                                             <div className="w-1 h-3 bg-admin-primary"></div>
                                             <p className="text-[10px] font-bold text-gray-900 uppercase tracking-widest">Handover Details</p>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="space-y-1">
-                                                <label className="text-[9px] text-gray-400 uppercase font-bold tracking-tight">Delivery Partner</label>
+                                                <label className="text-[9px] text-gray-400 uppercase font-bold tracking-tight">Carrier</label>
                                                 <input
                                                     type="text"
                                                     placeholder="e.g. BlueDart"
-                                                    className="w-full text-xs p-2.5 border border-gray-200 focus:outline-none focus:border-admin-primary bg-white"
+                                                    className="w-full text-xs p-3 border border-gray-200 focus:outline-none focus:border-admin-primary bg-white"
                                                     value={trackingInfo.carrier}
                                                     onChange={(e) => setTrackingInfo({ ...trackingInfo, carrier: e.target.value })}
                                                 />
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-[9px] text-gray-400 uppercase font-bold tracking-tight">Tracking ID (TID)</label>
+                                                <label className="text-[9px] text-gray-400 uppercase font-bold tracking-tight">TID</label>
                                                 <input
                                                     type="text"
                                                     placeholder="TID123..."
-                                                    className="w-full text-xs p-2.5 border border-gray-200 focus:outline-none focus:border-admin-primary bg-white"
+                                                    className="w-full text-xs p-3 border border-gray-200 focus:outline-none focus:border-admin-primary bg-white"
                                                     value={trackingInfo.trackingId}
                                                     onChange={(e) => setTrackingInfo({ ...trackingInfo, trackingId: e.target.value })}
                                                 />
@@ -216,7 +259,7 @@ function AdminOrders() {
                                         <button
                                             disabled={isActionLoading}
                                             onClick={() => {
-                                                if (!trackingInfo.carrier || !trackingInfo.trackingId) return alert("Please enter both Partner and TID");
+                                                if (!trackingInfo.carrier || !trackingInfo.trackingId) return alert("Please enter both Carrier and TID");
                                                 updateStatus(selectedOrder.id, 'shipped', {
                                                     deliveryPartner: trackingInfo.carrier,
                                                     trackingId: trackingInfo.trackingId
@@ -225,7 +268,7 @@ function AdminOrders() {
                                             }}
                                             className="w-full py-4 bg-gray-900 text-white text-[9px] font-bold uppercase tracking-[0.2em] hover:bg-admin-primary transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                                         >
-                                            {isActionLoading ? 'Processing Handover...' : 'Confirm Handover to Partner'}
+                                            {isActionLoading ? 'Processing...' : 'Confirm Handover'}
                                         </button>
                                     </div>
                                 )}
@@ -239,62 +282,58 @@ function AdminOrders() {
                                 )}
                             </div>
 
-
                             {/* Shipment Info */}
                             <div className="space-y-4">
                                 <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Shipping Address</h4>
                                 <div className="bg-gray-50 p-6 space-y-2">
-                                    <p className="text-sm font-bold text-gray-900">
-                                        {selectedOrder.customerName || `${selectedOrder.firstName || ''} ${selectedOrder.lastName || ''}` || 'Customer'}
+                                    <p className="text-sm font-bold text-gray-900 uppercase tracking-tight">
+                                        {selectedOrder.customerName || (selectedOrder.email ? selectedOrder.email.split('@')[0] : 'Customer')}
                                     </p>
                                     <div className="text-xs text-gray-500 leading-relaxed uppercase tracking-wider">
-                                        <p>{selectedOrder.shippingAddress?.address || selectedOrder.address || 'Address not found'}</p>
+                                        <p>{selectedOrder.shippingAddress?.address || selectedOrder.address}</p>
                                         <p>
-                                            {selectedOrder.shippingAddress?.city || selectedOrder.city || ''}
-                                            {(selectedOrder.shippingAddress?.city || selectedOrder.city) && (selectedOrder.shippingAddress?.pincode || selectedOrder.pincode) ? ', ' : ''}
-                                            {selectedOrder.shippingAddress?.pincode || selectedOrder.pincode || ''}
+                                            {selectedOrder.shippingAddress?.city || selectedOrder.city}
+                                            {", "}{selectedOrder.shippingAddress?.pincode || selectedOrder.pincode}
                                         </p>
                                         <p>India</p>
                                     </div>
                                     <p className="text-xs font-bold text-admin-primary pt-4">
-                                        {selectedOrder.phone || 'No Contact Number'}
+                                        {selectedOrder.phone}
                                     </p>
                                 </div>
                             </div>
 
                             {/* Order Items */}
                             <div className="space-y-4">
-
                                 <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Products</h4>
                                 <div className="space-y-6">
                                     {selectedOrder.items?.map((item, idx) => (
                                         <div key={idx} className="flex justify-between items-center group">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-gray-100 grayscale group-hover:grayscale-0 transition-all overflow-hidden">
+                                                <div className="w-12 h-12 bg-gray-100 overflow-hidden">
                                                     <img src={item.imageUrl || item.image || "/default-product.png"} className="w-full h-full object-cover" alt="" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-bold text-gray-900">{item.name}</p>
-                                                    <p className="text-[10px] text-gray-400 uppercase tracking-widest">{item.quantity} x ₹{item.price}</p>
+                                                    <p className="text-xs md:text-sm font-bold text-gray-900 leading-tight">{item.name}</p>
+                                                    <p className="text-[9px] md:text-[10px] text-gray-400 uppercase tracking-widest">{item.quantity} x ₹{item.price}</p>
                                                 </div>
                                             </div>
-                                            <p className="text-sm font-bold text-gray-900">₹{item.quantity * item.price}</p>
+                                            <p className="text-xs md:text-sm font-bold text-gray-900 whitespace-nowrap">₹{item.quantity * item.price}</p>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="p-8 border-t border-gray-100 bg-gray-50">
+                        <div className="p-6 md:p-8 border-t border-gray-100 bg-gray-50 mt-auto">
                             <div className="flex justify-between items-center">
                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Order Total</span>
-                                <span className="text-2xl font-serif text-gray-900 font-bold">₹{(selectedOrder.totalAmount || selectedOrder.total)?.toLocaleString()}</span>
+                                <span className="text-xl md:text-2xl font-serif text-gray-900 font-bold">₹{(selectedOrder.totalAmount || selectedOrder.total)?.toLocaleString()}</span>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
-
         </div>
     );
 }

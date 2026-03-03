@@ -79,8 +79,8 @@ function Navig() {
   return (
     <nav
       className={`fixed top-0 left-0 w-full transition-all duration-300 z-[70] ${scrolled
-          ? "bg-white/90 backdrop-blur-md border-b border-gray-100 py-2 md:py-3"
-          : "bg-transparent py-4 md:py-6"
+        ? "bg-white/90 backdrop-blur-md border-b border-gray-100 py-2 md:py-3"
+        : "bg-transparent py-4 md:py-6"
         }`}
     >
       <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between relative">
@@ -110,8 +110,8 @@ function Navig() {
                 <Link
                   to={item.path}
                   className={`text-[13px] font-bold uppercase tracking-[0.2em] transition-all hover:text-admin-primary flex items-center gap-1 ${location.pathname === item.path
-                      ? "text-admin-primary"
-                      : "text-gray-400"
+                    ? "text-admin-primary"
+                    : "text-gray-400"
                     }`}
                 >
                   {item.name}
@@ -216,8 +216,8 @@ function Navig() {
       {/* Mobile Dropdown */}
       <div
         className={`fixed inset-0 bg-white transition-all duration-500 ease-in-out px-10 pt-28 lg:hidden flex flex-col z-40 ${open
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+          ? "opacity-100 pointer-events-auto"
+          : "opacity-0 pointer-events-none"
           }`}
       >
         <div className="flex flex-col gap-6 flex-1 overflow-y-auto custom-scrollbar pb-10">
@@ -230,8 +230,8 @@ function Navig() {
                       setMobileCatsOpen((prev) => !prev)
                     }
                     className={`w-full text-left text-4xl font-serif font-medium text-gray-900 flex items-center justify-between transition-all transform ${open
-                        ? "translate-x-0 opacity-100"
-                        : "-translate-x-4 opacity-0"
+                      ? "translate-x-0 opacity-100"
+                      : "-translate-x-4 opacity-0"
                       }`}
                     style={{
                       transitionDelay: `${index * 50}ms`,
@@ -246,8 +246,8 @@ function Navig() {
                   </button>
                   <div
                     className={`overflow-hidden transition-all duration-300 grid gap-4 pl-4 border-l border-gray-100 ${mobileCatsOpen
-                        ? "max-h-96 opacity-100 mt-4"
-                        : "max-h-0 opacity-0"
+                      ? "max-h-96 opacity-100 mt-4"
+                      : "max-h-0 opacity-0"
                       }`}
                   >
                     {categories.map((cat) => (
@@ -272,8 +272,8 @@ function Navig() {
                     setMobileCatsOpen(false);
                   }}
                   className={`block text-4xl font-serif font-medium text-gray-900 transition-all transform ${open
-                      ? "translate-x-0 opacity-100"
-                      : "-translate-x-4 opacity-0"
+                    ? "translate-x-0 opacity-100"
+                    : "-translate-x-4 opacity-0"
                     }`}
                   style={{
                     transitionDelay: `${index * 50}ms`,

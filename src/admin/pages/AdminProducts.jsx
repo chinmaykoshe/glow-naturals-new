@@ -1,14 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import { HiOutlinePlus, HiOutlineTrash, HiOutlinePencilAlt } from 'react-icons/hi';
+import { HiOutlinePlus, HiOutlineTrash, HiOutlinePencilAlt, HiX } from 'react-icons/hi';
 
 const categoryImages = {
-    'Skincare': 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&w=600&q=80',
-    'Body Care': 'https://images.unsplash.com/photo-1612817288484-6f916006741a?auto=format&fit=crop&w=600&q=80',
-    'Wellness': 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80',
-    'Hair Care': 'https://images.unsplash.com/photo-1594125355930-bc63630f9a2d?auto=format&fit=crop&w=600&q=80',
-    'Essential Oils': 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80'
+    'Skincare': '/default-images/moisturizer.svg',
+    'Face Wash': '/default-images/facewash.svg',
+    'Body Care': '/default-images/moisturizer.svg',
+    'Wellness': '/default-images/serum.svg',
+    'Hair Care': '/default-images/haircare.svg',
+    'Essential Oils': '/default-images/perfume.svg',
+    'Soap': '/default-images/soap.svg',
+    'Bath Kit': '/default-images/bathkit.svg',
+    'Joint Care': '/default-images/jointcare.svg',
+    'Lip Care': '/default-images/lipstick.svg',
+    'Weight Loss': '/default-images/weightloss.svg',
+    'Winter Kit': '/default-images/winterkit.svg',
+    'Other': '/default-images/generic.svg'
+};
+
+const DEFAULT_IMAGES = {
+    'Generic': '/default-images/generic.svg',
+    'Moisturizer': '/default-images/moisturizer.svg',
+    'Serum': '/default-images/serum.svg',
+    'Face Wash': '/default-images/facewash.svg',
+    'Hair Care': '/default-images/haircare.svg',
+    'Shampoo': '/default-images/shampoo.svg',
+    'Perfume/Oil': '/default-images/perfume.svg',
+    'Lipstick': '/default-images/lipstick.svg',
+    'Soap': '/default-images/soap.svg',
+    'Bath Kit': '/default-images/bathkit.svg',
+    'Joint Care': '/default-images/jointcare.svg',
+    'Weight Loss': '/default-images/weightloss.svg',
+    'Winter Kit': '/default-images/winterkit.svg'
 };
 
 function AdminProducts() {
@@ -24,7 +48,10 @@ function AdminProducts() {
         imageUrl: '',
         stock: 10,
         description: '',
-        bestseller: false
+        ingredients: '',
+        howToUse: '',
+        bestseller: false,
+        newArrival: false
     });
 
     useEffect(() => {
@@ -38,7 +65,7 @@ function AdminProducts() {
             querySnapshot.forEach((doc) => {
                 p.push({ id: doc.id, ...doc.data() });
             });
-            setProducts(p);
+            setProducts(p.sort((a, b) => b.updatedAt?.seconds - a.updatedAt?.seconds));
             setLoading(false);
         } catch (error) {
             console.error("Error fetching products:", error);
@@ -56,7 +83,7 @@ function AdminProducts() {
         };
 
         if (!productData.imageUrl) {
-            productData.imageUrl = categoryImages[formProduct.category] || "//public/default-images/generic.svg";
+            productData.imageUrl = categoryImages[formProduct.category] || "/default-images/generic.svg";
         }
 
         try {
@@ -70,7 +97,7 @@ function AdminProducts() {
             }
             setIsFormOpen(false);
             setEditingId(null);
-            setFormProduct({ name: '', retailPrice: '', category: '', imageUrl: '', stock: 10, description: '', bestseller: false });
+            setFormProduct({ name: '', retailPrice: '', category: '', imageUrl: '', stock: 10, description: '', ingredients: '', howToUse: '', bestseller: false, newArrival: false });
             fetchProducts();
         } catch (error) {
             console.error("Error saving product:", error);
@@ -85,7 +112,10 @@ function AdminProducts() {
             imageUrl: p.imageUrl || p.image || '',
             stock: p.stock || p.inventory || 10,
             description: p.description || '',
-            bestseller: p.bestseller || false
+            ingredients: p.ingredients || '',
+            howToUse: p.howToUse || '',
+            bestseller: p.bestseller || false,
+            newArrival: p.newArrival || false
         });
         setEditingId(p.id);
         setIsFormOpen(true);
@@ -99,116 +129,222 @@ function AdminProducts() {
     };
 
     return (
-        <div className="space-y-12">
-            <div className="flex justify-between items-end">
+        <div className="space-y-8 md:space-y-12 min-h-[90vh] pb-64">
+            {/* Header Section - Responsive */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div>
                     <span className="text-admin-primary text-[10px] font-bold uppercase tracking-[0.5em] block mb-2">Stock Control</span>
-                    <h1 className="text-5xl font-serif text-gray-900 tracking-tighter">Products</h1>
+                    <h1 className="text-4xl md:text-5xl font-serif text-gray-900 tracking-tighter">Products</h1>
                 </div>
                 <button
                     onClick={() => {
-                        setIsFormOpen(!isFormOpen);
+                        setIsFormOpen(true);
                         setEditingId(null);
-                        setFormProduct({ name: '', retailPrice: '', category: '', imageUrl: '', stock: 10, description: '', bestseller: false });
+                        setFormProduct({ name: '', retailPrice: '', category: '', imageUrl: '', stock: 10, description: '', ingredients: '', howToUse: '', bestseller: false, newArrival: false });
                     }}
-                    className="bg-gray-900 text-white px-8 py-4 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-admin-primary transition-all rounded-none"
+                    className="w-full md:w-auto bg-gray-900 text-white px-8 py-4 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-admin-primary transition-all rounded-none"
                 >
-                    {isFormOpen ? 'Discard' : <><HiOutlinePlus size={16} /> New Product</>}
+                    <HiOutlinePlus size={16} /> New Product
                 </button>
             </div>
 
+            {/* Modal Overlay - Responsive */}
             {isFormOpen && (
-                <form onSubmit={handleSubmit} className="bg-white p-10 border border-gray-100 grid grid-cols-2 gap-8 rounded-none">
-                    <div className="space-y-2 border-b border-gray-100 pb-2">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Product Name</label>
-                        <input
-                            required
-                            type="text"
-                            className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900"
-                            value={formProduct.name}
-                            onChange={(e) => setFormProduct({ ...formProduct, name: e.target.value })}
-                        />
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-8 animate-fadeIn">
+                    <div
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                        onClick={() => setIsFormOpen(false)}
+                    ></div>
+
+                    <div className="bg-white w-full max-w-4xl h-full md:h-auto md:max-h-[90vh] overflow-y-auto relative z-10 shadow-2xl rounded-none">
+                        <div className="sticky top-0 bg-white z-20 px-6 md:px-10 py-5 md:py-6 border-b border-gray-100 flex justify-between items-center">
+                            <div>
+                                <span className="text-admin-primary text-[9px] font-bold uppercase tracking-[0.3em] block mb-1">Stock Management</span>
+                                <h2 className="text-xl md:text-2xl font-serif text-gray-900 tracking-tight">
+                                    {editingId ? 'Edit Essence' : 'New Creation'}
+                                </h2>
+                            </div>
+                            <button
+                                onClick={() => setIsFormOpen(false)}
+                                className="text-gray-400 hover:text-black transition-colors p-2"
+                            >
+                                <HiX size={24} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="p-6 md:p-10 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                            <div className="space-y-2 border-b border-gray-100 pb-2">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Product Name</label>
+                                <input
+                                    required
+                                    type="text"
+                                    className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900"
+                                    value={formProduct.name}
+                                    onChange={(e) => setFormProduct({ ...formProduct, name: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2 border-b border-gray-100 pb-2">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price (₹)</label>
+                                <input
+                                    required
+                                    type="number"
+                                    className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900"
+                                    value={formProduct.retailPrice}
+                                    onChange={(e) => setFormProduct({ ...formProduct, retailPrice: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2 border-b border-gray-100 pb-2">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Category</label>
+                                <input
+                                    required
+                                    list="category-suggestions"
+                                    className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900"
+                                    placeholder="e.g. Wellness, Skincare"
+                                    value={formProduct.category}
+                                    onChange={(e) => {
+                                        const cat = e.target.value;
+                                        setFormProduct({
+                                            ...formProduct,
+                                            category: cat,
+                                            imageUrl: formProduct.imageUrl || categoryImages[cat] || ''
+                                        });
+                                    }}
+                                />
+                                <datalist id="category-suggestions">
+                                    {Object.keys(categoryImages).map(cat => (
+                                        <option key={cat} value={cat} />
+                                    ))}
+                                </datalist>
+                            </div>
+                            <div className="space-y-2 border-b border-gray-100 pb-2">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Current Stock</label>
+                                <input
+                                    type="number"
+                                    className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900"
+                                    value={formProduct.stock}
+                                    onChange={(e) => setFormProduct({ ...formProduct, stock: e.target.value })}
+                                />
+                            </div>
+                            <div className="md:col-span-2 space-y-2 border-b border-gray-100 pb-2">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Description</label>
+                                <textarea
+                                    rows="2"
+                                    className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900 resize-none"
+                                    value={formProduct.description}
+                                    onChange={(e) => setFormProduct({ ...formProduct, description: e.target.value })}
+                                />
+                            </div>
+                            <div className="md:col-span-2 space-y-2 border-b border-gray-100 pb-2">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ingredients</label>
+                                <textarea
+                                    rows="2"
+                                    className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900 resize-none"
+                                    value={formProduct.ingredients}
+                                    onChange={(e) => setFormProduct({ ...formProduct, ingredients: e.target.value })}
+                                />
+                            </div>
+                            <div className="md:col-span-2 space-y-2 border-b border-gray-100 pb-2">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">How to Use</label>
+                                <textarea
+                                    rows="2"
+                                    className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900 resize-none"
+                                    value={formProduct.howToUse}
+                                    onChange={(e) => setFormProduct({ ...formProduct, howToUse: e.target.value })}
+                                />
+                            </div>
+                            <div className="md:col-span-1 space-y-4 border-b border-gray-100 pb-2">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select Default Image</label>
+                                    <select
+                                        className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900 appearance-none cursor-pointer"
+                                        onChange={(e) => e.target.value && setFormProduct({ ...formProduct, imageUrl: e.target.value })}
+                                        value={Object.values(DEFAULT_IMAGES).includes(formProduct.imageUrl) ? formProduct.imageUrl : ""}
+                                    >
+                                        <option value="">-- Choose Premium Preset --</option>
+                                        {Object.entries(DEFAULT_IMAGES).map(([name, url]) => (
+                                            <option key={url} value={url}>{name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Or Custom URL</label>
+                                    <input
+                                        type="text"
+                                        className="w-full bg-transparent py-1 text-sm focus:outline-none text-gray-900 placeholder:text-gray-200 border-t border-gray-50 mt-1"
+                                        placeholder="Paste custom link here"
+                                        value={formProduct.imageUrl}
+                                        onChange={(e) => {
+                                            let val = e.target.value;
+                                            const shorthands = {
+                                                '/generic': '/default-images/generic.svg',
+                                                '/moisturiser': '/default-images/moisturizer.svg',
+                                                '/serum': '/default-images/serum.svg',
+                                                '/facewash': '/default-images/facewash.svg',
+                                                '/cleanser': '/default-images/facewash.svg',
+                                                '/shampoo': '/default-images/shampoo.svg',
+                                                '/haircare': '/default-images/haircare.svg',
+                                                '/perfume': '/default-images/perfume.svg',
+                                                '/lipstick': '/default-images/lipstick.svg',
+                                                '/soap': '/default-images/soap.svg',
+                                                '/bathkit': '/default-images/bathkit.svg',
+                                                '/jointcare': '/default-images/jointcare.svg',
+                                                '/weightloss': '/default-images/weightloss.svg',
+                                                '/winterkit': '/default-images/winterkit.svg'
+                                            };
+
+                                            if (shorthands[val.toLowerCase()]) {
+                                                val = shorthands[val.toLowerCase()];
+                                            }
+
+                                            setFormProduct({ ...formProduct, imageUrl: val });
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                            <div className="md:col-span-1 flex flex-col md:flex-row gap-4 md:gap-12 py-4 md:py-0 border-b border-gray-100 md:border-b-0">
+                                <div className="flex items-center gap-4">
+                                    <input
+                                        type="checkbox"
+                                        id="bestseller"
+                                        className="w-5 h-5 md:w-4 md:h-4 accent-admin-primary rounded-none"
+                                        checked={formProduct.bestseller}
+                                        onChange={(e) => setFormProduct({ ...formProduct, bestseller: e.target.checked })}
+                                    />
+                                    <label htmlFor="bestseller" className="text-[10px] font-bold text-gray-400 uppercase tracking-widest cursor-pointer">Mark as Bestseller</label>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <input
+                                        type="checkbox"
+                                        id="newArrival"
+                                        className="w-5 h-5 md:w-4 md:h-4 accent-admin-primary rounded-none"
+                                        checked={formProduct.newArrival}
+                                        onChange={(e) => setFormProduct({ ...formProduct, newArrival: e.target.checked })}
+                                    />
+                                    <label htmlFor="newArrival" className="text-[10px] font-bold text-gray-400 uppercase tracking-widest cursor-pointer">Mark as New Arrival</label>
+                                </div>
+                            </div>
+                            <div className="md:col-span-2 pt-6 md:pt-8 flex flex-col-reverse md:flex-row gap-4 mb-10 md:mb-0">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsFormOpen(false)}
+                                    className="w-full md:flex-1 border border-gray-900 text-gray-900 py-5 font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-gray-50 transition-all rounded-none"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="w-full md:flex-[2] bg-admin-primary text-white py-5 font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-gray-900 transition-all rounded-none shadow-none"
+                                >
+                                    {editingId ? 'Update Product' : 'Add to Collection'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                    <div className="space-y-2 border-b border-gray-100 pb-2">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price (₹)</label>
-                        <input
-                            required
-                            type="number"
-                            className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900"
-                            value={formProduct.retailPrice}
-                            onChange={(e) => setFormProduct({ ...formProduct, retailPrice: e.target.value })}
-                        />
-                    </div>
-                    <div className="space-y-2 border-b border-gray-100 pb-2">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Category</label>
-                        <input
-                            required
-                            list="category-suggestions"
-                            className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900"
-                            placeholder="e.g. Wellness, Skincare"
-                            value={formProduct.category}
-                            onChange={(e) => {
-                                const cat = e.target.value;
-                                setFormProduct({
-                                    ...formProduct,
-                                    category: cat,
-                                    imageUrl: formProduct.imageUrl || categoryImages[cat] || ''
-                                });
-                            }}
-                        />
-                        <datalist id="category-suggestions">
-                            {Object.keys(categoryImages).map(cat => (
-                                <option key={cat} value={cat} />
-                            ))}
-                        </datalist>
-                    </div>
-                    <div className="space-y-2 border-b border-gray-100 pb-2">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Current Stock</label>
-                        <input
-                            type="number"
-                            className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900"
-                            value={formProduct.stock}
-                            onChange={(e) => setFormProduct({ ...formProduct, stock: e.target.value })}
-                        />
-                    </div>
-                    <div className="col-span-2 space-y-2 border-b border-gray-100 pb-2">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Description</label>
-                        <textarea
-                            rows="2"
-                            className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900 resize-none"
-                            value={formProduct.description}
-                            onChange={(e) => setFormProduct({ ...formProduct, description: e.target.value })}
-                        />
-                    </div>
-                    <div className="col-span-1 space-y-2 border-b border-gray-100 pb-2">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Product Image (URL)</label>
-                        <input
-                            type="url"
-                            className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900 placeholder:text-gray-200"
-                            placeholder="Leave empty for category default"
-                            value={formProduct.imageUrl}
-                            onChange={(e) => setFormProduct({ ...formProduct, imageUrl: e.target.value })}
-                        />
-                    </div>
-                    <div className="col-span-1 flex items-center gap-4">
-                        <input
-                            type="checkbox"
-                            id="bestseller"
-                            className="w-4 h-4 accent-admin-primary rounded-none"
-                            checked={formProduct.bestseller}
-                            onChange={(e) => setFormProduct({ ...formProduct, bestseller: e.target.checked })}
-                        />
-                        <label htmlFor="bestseller" className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Mark as Bestseller</label>
-                    </div>
-                    <div className="col-span-2 pt-4 text-right">
-                        <button type="submit" className="bg-admin-primary text-white px-20 py-5 font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-gray-900 transition-all rounded-none shadow-none">
-                            {editingId ? 'Update Product' : 'Save Product'}
-                        </button>
-                    </div>
-                </form>
+                </div>
             )}
 
-            <div className="bg-white border border-gray-100 overflow-hidden rounded-none shadow-none">
+            {/* Desktop Table View - Hidden on Mobile */}
+            <div className="hidden md:block bg-white border border-gray-100 overflow-hidden rounded-none shadow-none">
                 <table className="w-full text-left">
                     <thead className="bg-gray-50 border-b border-gray-100">
                         <tr>
@@ -222,11 +358,8 @@ function AdminProducts() {
                     <tbody className="divide-y divide-gray-50">
                         {products.map((p) => {
                             const getCleanImage = (url) => {
-                                if (!url) return "//public/default-images/generic.svg";
-                                if (typeof url === 'string' && url.startsWith("//public/")) {
-                                    return url.replace("//public/", "/");
-                                }
-                                return url;
+                                if (!url) return "/default-images/generic.svg";
+                                return url.replace("//public/", "/");
                             };
                             const pImage = getCleanImage(p.imageUrl || p.image);
                             const pPrice = p.retailPrice || p.price;
@@ -236,10 +369,20 @@ function AdminProducts() {
                                 <tr key={p.id} className="hover:bg-gray-50/50 transition-all group">
                                     <td className="px-8 py-5">
                                         <div className="flex items-center gap-4">
-                                            <img src={pImage} className="w-12 h-12 object-cover grayscale group-hover:grayscale-0 transition-all" alt="" />
+                                            <div className="w-12 h-12 bg-gray-50 overflow-hidden border border-gray-100">
+                                                <img
+                                                    src={pImage}
+                                                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"
+                                                    alt=""
+                                                    onError={(e) => e.target.src = "/default-images/generic.svg"}
+                                                />
+                                            </div>
                                             <div>
                                                 <p className="text-sm font-bold text-gray-900">{p.name}</p>
-                                                {p.bestseller && <span className="text-[8px] bg-admin-primary text-white px-2 py-0.5 font-bold uppercase tracking-tighter">Bestseller</span>}
+                                                <div className="flex gap-2 mt-1">
+                                                    {p.bestseller && <span className="text-[7px] bg-admin-primary text-white px-2 py-0.5 font-bold uppercase tracking-tighter">Bestseller</span>}
+                                                    {p.newArrival && <span className="text-[7px] bg-gray-900 text-white px-2 py-0.5 font-bold uppercase tracking-tighter">New Arrival</span>}
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
@@ -265,12 +408,68 @@ function AdminProducts() {
                         })}
                     </tbody>
                 </table>
-                {products.length === 0 && !loading && (
-                    <div className="p-32 text-center text-gray-300">
-                        <p className="font-serif italic text-2xl">No products found.</p>
-                    </div>
-                )}
             </div>
+
+            {/* Mobile Card View - Visible only on Small Screens */}
+            <div className="md:hidden space-y-4">
+                {products.map((p) => {
+                    const getCleanImage = (url) => {
+                        if (!url) return "/default-images/generic.svg";
+                        return url.replace("//public/", "/");
+                    };
+                    const pImage = getCleanImage(p.imageUrl || p.image);
+                    const pPrice = p.retailPrice || p.price;
+                    const pStock = p.stock || p.inventory;
+
+                    return (
+                        <div key={p.id} className="bg-white border border-gray-100 p-5 space-y-4">
+                            <div className="flex items-start gap-4">
+                                <img
+                                    src={pImage}
+                                    className="w-16 h-16 object-cover border border-gray-100"
+                                    alt=""
+                                    onError={(e) => e.target.src = "/default-images/generic.svg"}
+                                />
+                                <div className="flex-1 space-y-1">
+                                    <div className="flex flex-wrap gap-2 text-[8px] uppercase font-bold tracking-widest pb-1 border-b border-gray-50 mb-1">
+                                        <span className="text-gray-400 mr-auto">{p.category}</span>
+                                        {p.bestseller && <span className="bg-admin-primary text-white px-2 py-0.5">Bestseller</span>}
+                                        {p.newArrival && <span className="bg-gray-900 text-white px-2 py-0.5">New Arrival</span>}
+                                    </div>
+                                    <p className="font-bold text-gray-900 leading-tight">{p.name}</p>
+                                    <p className="font-bold text-gray-900 pt-1">₹{pPrice?.toLocaleString()}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+                                <div className={`text-[10px] font-bold px-3 py-1 ${pStock < 5 ? 'bg-red-50 text-red-600' : 'bg-green-50 text-admin-primary'}`}>
+                                    {pStock} IN STOCK
+                                </div>
+                                <div className="flex gap-4">
+                                    <button
+                                        onClick={() => handleEdit(p)}
+                                        className="p-2 text-gray-400 hover:text-admin-primary"
+                                    >
+                                        <HiOutlinePencilAlt size={20} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(p.id)}
+                                        className="p-2 text-gray-400 hover:text-red-500"
+                                    >
+                                        <HiOutlineTrash size={20} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {products.length === 0 && !loading && (
+                <div className="py-20 md:p-32 text-center text-gray-300">
+                    <p className="font-serif italic text-xl md:text-2xl">No products found.</p>
+                </div>
+            )}
         </div>
     );
 }

@@ -53,22 +53,22 @@ function Dashboard() {
     }
 
     return (
-        <div className="space-y-12">
+        <div className="space-y-8 md:space-y-12 min-h-[90vh] pb-64">
             <div>
                 <span className="text-admin-primary text-[10px] font-bold uppercase tracking-[0.5em] block mb-2">Overview</span>
-                <h1 className="text-5xl font-serif text-gray-900 tracking-tighter">Admin Dashboard</h1>
+                <h1 className="text-4xl md:text-5xl font-serif text-gray-900 tracking-tighter">Admin Dashboard</h1>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-1">
                 {[
                     { label: 'Total Revenue', value: `₹${stats.revenue.toLocaleString()}` },
                     { label: 'Total Orders', value: stats.orders },
                     { label: 'Total Customers', value: stats.customers },
                     { label: 'Low Stock Items', value: stats.lowStock },
                 ].map((stat) => (
-                    <div key={stat.label} className="bg-white p-10 border border-gray-100 space-y-4">
+                    <div key={stat.label} className="bg-white p-8 md:p-10 border border-gray-100 space-y-4">
                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{stat.label}</p>
-                        <p className="text-4xl font-serif text-gray-900">{stat.value}</p>
+                        <p className="text-3xl md:text-4xl font-serif text-gray-900">{stat.value}</p>
                     </div>
                 ))}
             </div>

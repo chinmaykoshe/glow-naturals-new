@@ -188,7 +188,12 @@ function Profile() {
                                                                     <img src={item.image || "/default-images/generic.svg"} className="w-full h-full object-cover grayscale" alt="" />
                                                                 </div>
                                                                 <div>
-                                                                    <p className="text-xs font-bold text-gray-900 uppercase tracking-tight">{item.name}</p>
+                                                                    <Link
+                                                                        to={`/${(item.category || "all").toLowerCase().replace(/\s+/g, '-')}/${item.name.toLowerCase().replace(/\s+/g, '-')}`}
+                                                                        className="text-xs font-bold text-gray-900 uppercase tracking-tight hover:text-admin-primary transition-colors"
+                                                                    >
+                                                                        {item.name}
+                                                                    </Link>
                                                                     <p className="text-[11px] text-gray-400 uppercase">{item.quantity} x ₹{item.price}</p>
                                                                 </div>
                                                             </div>

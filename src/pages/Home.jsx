@@ -14,30 +14,41 @@ const featuredCategories = [
 
 function Home() {
     const [trendingProducts, setTrendingProducts] = useState([]);
+    const [newArrivals, setNewArrivals] = useState([]);
 
     useEffect(() => {
-        const fetchTrending = async () => {
-            // First try to fetch bestsellers
-            const q = query(collection(db, "products"), where("bestseller", "==", true), limit(4));
-            let querySnapshot = await getDocs(q);
-            let products = [];
-            querySnapshot.forEach((doc) => {
-                products.push({ id: doc.id, ...doc.data() });
-            });
+        const fetchHomeData = async () => {
+            try {
+                // Fetch Bestsellers
+                const bq = query(collection(db, "products"), where("bestseller", "==", true), limit(4));
+                const bSnapshot = await getDocs(bq);
+                let bestsellers = [];
+                bSnapshot.forEach((doc) => bestsellers.push({ id: doc.id, ...doc.data() }));
 
-            // If less than 4 bestsellers, fetch more products
-            if (products.length < 4) {
-                const q2 = query(collection(db, "products"), limit(8));
-                const querySnapshot2 = await getDocs(q2);
-                querySnapshot2.forEach((doc) => {
-                    if (!products.find(p => p.id === doc.id)) {
-                        products.push({ id: doc.id, ...doc.data() });
-                    }
-                });
+                // Fetch New Arrivals
+                const nq = query(collection(db, "products"), where("newArrival", "==", true), limit(4));
+                const nSnapshot = await getDocs(nq);
+                let arrivals = [];
+                nSnapshot.forEach((doc) => arrivals.push({ id: doc.id, ...doc.data() }));
+
+                // Fallbacks if lists are empty
+                if (bestsellers.length === 0 || arrivals.length === 0) {
+                    const fallbackQ = query(collection(db, "products"), limit(8));
+                    const fSnapshot = await getDocs(fallbackQ);
+                    const allProducts = [];
+                    fSnapshot.forEach(doc => allProducts.push({ id: doc.id, ...doc.data() }));
+
+                    if (bestsellers.length === 0) bestsellers = allProducts.slice(0, 4);
+                    if (arrivals.length === 0) arrivals = allProducts.slice(4, 8);
+                }
+
+                setTrendingProducts(bestsellers);
+                setNewArrivals(arrivals);
+            } catch (error) {
+                console.error("Error fetching home data:", error);
             }
-            setTrendingProducts(products.slice(0, 4));
         };
-        fetchTrending();
+        fetchHomeData();
     }, []);
     return (
         <main className="bg-white">
@@ -86,8 +97,25 @@ function Home() {
                 </div>
             </section>
 
-            {/* Trending Now */}
+            {/* New Arrivals */}
             <section className="py-32 px-6 md:px-12">
+                <div className="max-w-7xl mx-auto">
+                    <div className="flex items-end justify-between mb-20 px-4">
+                        <div className="space-y-4">
+                            <span className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.5em] block">Seasonal Release</span>
+                            <h2 className="text-5xl font-serif text-gray-900 tracking-tighter leading-none">New Arrivals</h2>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-10">
+                        {newArrivals.map((product) => (
+                            <ProductCard key={product.id} product={product} />
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Trending Now */}
+            <section className="py-32 px-6 md:px-12 bg-white">
                 <div className="max-w-7xl mx-auto">
                     <div className="mb-20 px-4">
                         <span className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.5em] mb-4 block text-center">Trending</span>
