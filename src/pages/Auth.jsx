@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
@@ -71,14 +71,14 @@ function Auth() {
     };
 
     return (
-        <div className="min-h-[80vh] flex items-center justify-center py-32 px-4 bg-white pt-40">
+        <div className="min-h-[80vh] flex items-center justify-center py-20 px-4 bg-white pt-32">
             <div className="max-w-md w-full">
-                <div className="text-center mb-12">
-                    <span className="text-gray-400 text-xs font-bold uppercase tracking-[0.5em] block mb-4">Membership</span>
-                    <h1 className="text-5xl font-serif text-gray-900 tracking-tighter mb-4">
+                <div className="text-center mb-10">
+                    <span className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.5em] block mb-3">Membership</span>
+                    <h1 className="text-4xl font-serif text-gray-900 tracking-tighter mb-3">
                         {isLogin ? "Welcome Back" : "Create Account"}
                     </h1>
-                    <p className="text-gray-500 text-sm italic font-serif">
+                    <p className="text-gray-500 text-xs italic font-serif">
                         {isLogin ? "Continue where you left off." : "Start your natural care journey."}
                     </p>
                 </div>
@@ -139,6 +139,17 @@ function Auth() {
                                 onChange={handleChange}
                             />
                         </div>
+
+                        {isLogin && (
+                            <div className="flex justify-end pt-1">
+                                <Link
+                                    to="/forget-password"
+                                    className="text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-gray-900 transition-colors"
+                                >
+                                    Forgot Password?
+                                </Link>
+                            </div>
+                        )}
 
                         <button
                             disabled={loading}

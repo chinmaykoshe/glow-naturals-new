@@ -10,7 +10,8 @@ import NewArrivals from "./pages/New-Arrivals";
 import Shop from "./pages/Shop";
 import Checkout from "./pages/Checkout";
 import Profile from "./pages/Profile";
-import ForgetPassword from "./components/Forget-Password";
+import ForgetPassword from "./pages/ForgetPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Navig from "./components/Navig";
 import Footer from "./components/Footer";
 import Cart from "./components/Cart";
@@ -53,6 +54,7 @@ function AppContent() {
         <Route path="/login" element={<Auth />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/forget-password" element={<ForgetPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/privacy" element={<Privacy />} />

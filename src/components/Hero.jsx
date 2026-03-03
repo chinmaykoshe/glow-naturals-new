@@ -25,20 +25,20 @@ function Hero() {
 
     const { bgImage, title, subtitle, buttonLabel, buttonHref } = content;
     return (
-        <section className="relative w-full min-h-[90vh] flex items-center bg-white pt-24 md:pt-32">
+        <section className="relative w-full min-h-[90vh] flex items-center bg-white pt-12 md:pt-16">
             <div className="absolute inset-0 z-0">
                 <div className="absolute right-0 top-0 w-1/3 h-full bg-gray-50 hidden lg:block" />
             </div>
 
             <div className="max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16 px-6 md:px-12 py-20 items-center relative z-10">
                 {/* Text Content */}
-                <div className="lg:col-span-7 space-y-12">
+                <div className="lg:col-span-7 space-y-10">
                     <div className="space-y-6">
                         <span className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.5em] block">Established 2020</span>
-                        <h1 className="text-6xl md:text-8xl font-serif font-medium text-gray-900 leading-[1] tracking-tighter">
+                        <h1 className="text-5xl md:text-7xl font-serif font-medium text-gray-900 leading-[1] tracking-tighter">
                             {title}
                         </h1>
-                        <p className="text-lg text-gray-400 max-w-md leading-relaxed">
+                        <p className="text-base text-gray-400 max-w-md leading-relaxed">
                             {subtitle}
                         </p>
                     </div>
@@ -46,13 +46,13 @@ function Hero() {
                     <div className="flex flex-col sm:flex-row items-center gap-4">
                         <Link
                             to={buttonHref}
-                            className="w-full sm:w-auto px-12 py-5 bg-gray-900 text-white text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-admin-primary transition-all rounded-none"
+                            className="w-full sm:w-auto px-10 py-4 bg-gray-900 text-white text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-admin-primary transition-all rounded-none"
                         >
                             {buttonLabel}
                         </Link>
                         <Link
                             to="/about"
-                            className="w-full sm:w-auto px-12 py-5 border border-gray-200 text-gray-900 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-gray-50 transition-all rounded-none"
+                            className="w-full sm:w-auto px-10 py-4 border border-gray-200 text-gray-900 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-gray-50 transition-all rounded-none"
                         >
                             Read More
                         </Link>

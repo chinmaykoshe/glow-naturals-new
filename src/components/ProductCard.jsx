@@ -55,7 +55,7 @@ function ProductCard({ product }) {
             {/* Content Container */}
             <div className="p-4 sm:p-5 md:p-6 space-y-3 sm:space-y-4">
                 <div className="space-y-1.5">
-                    <h3 className="text-lg sm:text-base md:text-lg font-bold text-gray-900 uppercase tracking-tight leading-tight whitespace-normal break-words">
+                    <h3 className="text-base sm:text-sm md:text-base font-bold text-gray-900 uppercase tracking-tight leading-tight whitespace-normal break-words">
                         {name}
                     </h3>
                     <p className="text-xs sm:text-[10px] md:text-[11px] text-gray-500 font-medium line-clamp-2 leading-relaxed min-h-9 sm:h-10">
@@ -65,7 +65,7 @@ function ProductCard({ product }) {
 
                 {/* Footer Section */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1 md:pt-2">
-                    <p className="text-2xl sm:text-xl md:text-2xl font-bold text-gray-900">
+                    <p className="text-xl sm:text-lg md:text-xl font-bold text-gray-900">
                         ₹{displayPrice?.toLocaleString('en-IN')}
                     </p>
 
