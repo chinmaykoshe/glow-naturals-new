@@ -89,6 +89,30 @@ function Checkout() {
             }
 
             const docRef = await addDoc(collection(db, "orders"), orderData);
+
+            // 🔥 Send confirmation email (non-blocking but safe)
+            try {
+                const emailRes = await fetch("/.netlify/functions/sendOrderEmail", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        email: formData.email,
+                        orderId: docRef.id,
+                        total,
+                        status: "pending",
+                        customerName: formData.fullName,
+                    }),
+                });
+
+                const emailData = await emailRes.json();
+
+                if (!emailRes.ok) {
+                    console.error("Email failed:", emailData);
+                }
+            } catch (emailError) {
+                console.error("Email service error:", emailError);
+            }
+
             console.log("Order placed successfully, ID:", docRef.id);
             setOrderId(docRef.id);
             setCartItems([]);
