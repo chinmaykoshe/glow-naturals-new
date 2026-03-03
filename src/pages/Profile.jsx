@@ -208,7 +208,22 @@ function Profile() {
                                                         </p>
                                                         <p className="text-admin-primary font-bold pt-2">{order.phone || profileData?.phone}</p>
                                                     </div>
+
+                                                    {(order.deliveryPartner || order.trackingId) && (
+                                                        <div className="mt-6 pt-6 border-t border-gray-100 bg-white/50 p-4">
+                                                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">Package Tracking</p>
+                                                            <div className="space-y-1">
+                                                                {order.deliveryPartner && (
+                                                                    <p className="text-[10px] font-bold text-gray-900 uppercase tracking-tight">Partner: {order.deliveryPartner}</p>
+                                                                )}
+                                                                {order.trackingId && (
+                                                                    <p className="text-[10px] text-admin-primary font-bold uppercase tracking-widest">TID: {order.trackingId}</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
+
                                             </div>
                                         </div>
                                     ))}

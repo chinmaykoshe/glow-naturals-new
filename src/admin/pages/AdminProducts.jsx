@@ -102,7 +102,7 @@ function AdminProducts() {
         <div className="space-y-12">
             <div className="flex justify-between items-end">
                 <div>
-                    <span className="text-admin-primary text-[10px] font-bold uppercase tracking-[0.5em] block mb-2">Inventory</span>
+                    <span className="text-admin-primary text-[10px] font-bold uppercase tracking-[0.5em] block mb-2">Stock Control</span>
                     <h1 className="text-5xl font-serif text-gray-900 tracking-tighter">Products</h1>
                 </div>
                 <button
@@ -113,7 +113,7 @@ function AdminProducts() {
                     }}
                     className="bg-gray-900 text-white px-8 py-4 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-admin-primary transition-all rounded-none"
                 >
-                    {isFormOpen ? 'Discard' : <><HiOutlinePlus size={16} /> New Essence</>}
+                    {isFormOpen ? 'Discard' : <><HiOutlinePlus size={16} /> New Product</>}
                 </button>
             </div>
 
@@ -130,7 +130,7 @@ function AdminProducts() {
                         />
                     </div>
                     <div className="space-y-2 border-b border-gray-100 pb-2">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Retail Value (₹)</label>
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price (₹)</label>
                         <input
                             required
                             type="number"
@@ -140,12 +140,12 @@ function AdminProducts() {
                         />
                     </div>
                     <div className="space-y-2 border-b border-gray-100 pb-2">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Category / Domain</label>
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Category</label>
                         <input
                             required
                             list="category-suggestions"
                             className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900"
-                            placeholder="e.g. Wellness, Rituals"
+                            placeholder="e.g. Wellness, Skincare"
                             value={formProduct.category}
                             onChange={(e) => {
                                 const cat = e.target.value;
@@ -181,7 +181,7 @@ function AdminProducts() {
                         />
                     </div>
                     <div className="col-span-1 space-y-2 border-b border-gray-100 pb-2">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Visual Evidence (URL)</label>
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Product Image (URL)</label>
                         <input
                             type="url"
                             className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900 placeholder:text-gray-200"
@@ -202,7 +202,7 @@ function AdminProducts() {
                     </div>
                     <div className="col-span-2 pt-4 text-right">
                         <button type="submit" className="bg-admin-primary text-white px-20 py-5 font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-gray-900 transition-all rounded-none shadow-none">
-                            {editingId ? 'Confirm Divine Update' : 'Persist to Database'}
+                            {editingId ? 'Update Product' : 'Save Product'}
                         </button>
                     </div>
                 </form>
@@ -212,10 +212,10 @@ function AdminProducts() {
                 <table className="w-full text-left">
                     <thead className="bg-gray-50 border-b border-gray-100">
                         <tr>
-                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Product Essence</th>
-                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Domain</th>
-                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Value</th>
-                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Vitality</th>
+                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Product</th>
+                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Category</th>
+                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price</th>
+                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Stock</th>
                             <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Actions</th>
                         </tr>
                     </thead>
@@ -267,7 +267,7 @@ function AdminProducts() {
                 </table>
                 {products.length === 0 && !loading && (
                     <div className="p-32 text-center text-gray-300">
-                        <p className="font-serif italic text-2xl">The archive is silent.</p>
+                        <p className="font-serif italic text-2xl">No products found.</p>
                     </div>
                 )}
             </div>

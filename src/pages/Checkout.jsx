@@ -25,8 +25,7 @@ function Checkout() {
 
     const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
     const shipping = subtotal > 2000 ? 0 : 80;
-    const tax = Math.round(subtotal * 0.18);
-    const total = subtotal + shipping + tax;
+    const total = subtotal + shipping;
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -76,7 +75,6 @@ function Checkout() {
             })),
             subtotal,
             shipping,
-            tax,
             totalAmount: total,
             status: "pending",
             createdAt: serverTimestamp()
@@ -101,6 +99,17 @@ function Checkout() {
                         total,
                         status: "pending",
                         customerName: formData.fullName,
+                        items: cartItems.map(item => ({
+                            name: item.name,
+                            price: item.price,
+                            quantity: item.quantity
+                        })),
+                        shippingAddress: {
+                            address: formData.address,
+                            city: formData.city,
+                            pincode: formData.pincode,
+                            phone: formData.phone
+                        }
                     }),
                 });
 
@@ -134,10 +143,10 @@ function Checkout() {
                     </div>
                 </div>
                 <div className="space-y-4">
-                    <span className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.5em]">Order Placed</span>
+                    <span className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.5em]">Order Completed</span>
                     <h1 className="text-5xl md:text-7xl font-serif text-gray-900 tracking-tighter">Thank You</h1>
                     <p className="text-gray-500 max-w-md mx-auto italic font-serif text-lg">
-                        Your natural products are being prepared. <br />
+                        Your products are being prepared. <br />
                         Order ID: <span className="text-admin-primary font-mono not-italic uppercase tracking-widest text-sm">#{orderId.slice(0, 10)}</span>
                     </p>
                 </div>
@@ -325,12 +334,11 @@ function Checkout() {
                                         {shipping === 0 ? 'FREE' : `₹${shipping}`}
                                     </span>
                                 </div>
-                                <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
-                                    <span className="text-gray-400">Tax Total</span>
-                                    <span className="text-gray-900">₹{tax.toLocaleString('en-IN')}</span>
-                                </div>
                                 <div className="flex justify-between items-end pt-6 mt-6 border-t border-gray-100">
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-900">Grand Total</span>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-900">Grand Total</span>
+                                        <span className="text-[9px] text-gray-400 uppercase tracking-widest italic">Inclusive of all taxes</span>
+                                    </div>
                                     <span className="text-2xl font-serif text-admin-primary font-bold">₹{total.toLocaleString('en-IN')}</span>
                                 </div>
                             </div>

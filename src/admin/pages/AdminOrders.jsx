@@ -27,15 +27,51 @@ function AdminOrders() {
         }
     };
 
-    const updateStatus = async (id, status) => {
+    const [trackingInfo, setTrackingInfo] = useState({ trackingId: '', carrier: '' });
+    const [isActionLoading, setIsActionLoading] = useState(false);
+
+    const updateStatus = async (id, status, extraData = {}) => {
+        setIsActionLoading(true);
         try {
-            await updateDoc(doc(db, "orders", id), { status });
+            const updateData = { status, ...extraData };
+            await updateDoc(doc(db, "orders", id), updateData);
+
+            // Send email notification
+            const order = orders.find(o => o.id === id);
+            if (order) {
+                try {
+                    await fetch('/.netlify/functions/sendOrderEmail', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            email: order.email,
+                            orderId: id,
+                            total: order.totalAmount || order.total,
+                            status: status,
+                            customerName: order.customerName || `${order.firstName || ''} ${order.lastName || ''}`,
+                            items: order.items,
+                            shippingAddress: {
+                                address: order.shippingAddress?.address || order.address,
+                                city: order.shippingAddress?.city || order.city,
+                                pincode: order.shippingAddress?.pincode || order.pincode,
+                                phone: order.phone
+                            },
+                            trackingId: extraData.trackingId || order.trackingId,
+                            deliveryPartner: extraData.deliveryPartner || order.deliveryPartner
+                        })
+                    });
+                } catch (emailError) {
+                    console.error("Failed to send status update email:", emailError);
+                }
+            }
+
             fetchOrders();
             if (selectedOrder && selectedOrder.id === id) {
-                setSelectedOrder({ ...selectedOrder, status });
+                setSelectedOrder({ ...selectedOrder, ...updateData });
             }
         } catch (error) {
             console.error("Error updating order status:", error);
+        } finally {
+            setIsActionLoading(false);
         }
     };
 
@@ -56,7 +92,7 @@ function AdminOrders() {
     return (
         <div className="space-y-12 relative min-h-[80vh]">
             <div>
-                <span className="text-admin-primary text-[10px] font-bold uppercase tracking-[0.5em] block mb-2">Commerce Flow</span>
+                <span className="text-admin-primary text-[10px] font-bold uppercase tracking-[0.5em] block mb-2">Management</span>
                 <h1 className="text-5xl font-serif text-gray-900 tracking-tighter">Orders</h1>
             </div>
 
@@ -64,10 +100,10 @@ function AdminOrders() {
                 <table className="w-full text-left border-collapse">
                     <thead className="bg-gray-50 border-b border-gray-100">
                         <tr>
-                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Order Reference</th>
-                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ritualist</th>
-                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sum</th>
-                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Current Phase</th>
+                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Order Ref</th>
+                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Customer</th>
+                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Amount</th>
+                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
                             <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Actions</th>
                         </tr>
                     </thead>
@@ -107,7 +143,7 @@ function AdminOrders() {
                 </table>
                 {orders.length === 0 && !loading && (
                     <div className="p-32 text-center text-gray-300">
-                        <p className="font-serif italic text-2xl">The order stream is still.</p>
+                        <p className="font-serif italic text-2xl">No orders found.</p>
                     </div>
                 )}
             </div>
@@ -119,7 +155,7 @@ function AdminOrders() {
                     <div className="relative w-full max-w-lg bg-white h-full shadow-2xl flex flex-col animate-slide-in-right">
                         <div className="p-8 border-b border-gray-100 flex justify-between items-center">
                             <div>
-                                <span className="text-admin-primary text-[10px] font-bold uppercase tracking-[0.5em] block mb-1">Manifest Details</span>
+                                <span className="text-admin-primary text-[10px] font-bold uppercase tracking-[0.5em] block mb-1">Details</span>
                                 <h2 className="text-2xl font-serif text-gray-900">Order #{selectedOrder.id.slice(0, 10).toUpperCase()}</h2>
                             </div>
                             <button onClick={() => setSelectedOrder(null)} className="text-gray-400 hover:text-gray-900 transition-all p-2">
@@ -129,30 +165,90 @@ function AdminOrders() {
 
                         <div className="flex-1 overflow-y-auto p-8 space-y-12">
                             {/* Status Orchestration */}
-                            <div className="space-y-4">
-                                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Current Lifecycle Phase</h4>
+                            {/* Status Orchestration */}
+                            <div className="space-y-6">
+                                <div className="flex justify-between items-baseline">
+                                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Update Order Status</h4>
+                                    {isActionLoading && <span className="text-[9px] font-bold text-admin-primary animate-pulse uppercase tracking-widest">Updating...</span>}
+                                </div>
+
                                 <div className="flex gap-2">
-                                    {['pending', 'processing', 'shipped', 'delivered'].map((s) => (
+                                    {['pending', 'shipped', 'delivered'].map((s) => (
                                         <button
                                             key={s}
+                                            disabled={isActionLoading || s === 'shipped'}
                                             onClick={() => updateStatus(selectedOrder.id, s)}
-                                            className={`flex-1 py-3 text-[9px] font-bold uppercase tracking-widest border transition-all ${selectedOrder.status === s ? 'bg-admin-primary border-admin-primary text-white' : 'bg-white border-gray-100 text-gray-400 hover:border-admin-primary'}`}
+                                            className={`flex-1 py-3 text-[9px] font-bold uppercase tracking-widest border transition-all ${selectedOrder.status === s ? 'bg-admin-primary border-admin-primary text-white' : 'bg-white border-gray-100 text-gray-400 hover:border-admin-primary'} ${s === 'shipped' ? 'cursor-default opacity-80' : ''}`}
                                         >
-                                            {s}
+                                            {s === 'shipped' ? 'Handed Over' : s}
                                         </button>
                                     ))}
                                 </div>
+
+                                {selectedOrder.status === 'pending' && (
+                                    <div className="space-y-4 bg-gray-50 p-6 border border-gray-100">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-1 h-3 bg-admin-primary"></div>
+                                            <p className="text-[10px] font-bold text-gray-900 uppercase tracking-widest">Handover Details</p>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] text-gray-400 uppercase font-bold tracking-tight">Delivery Partner</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="e.g. BlueDart"
+                                                    className="w-full text-xs p-2.5 border border-gray-200 focus:outline-none focus:border-admin-primary bg-white"
+                                                    value={trackingInfo.carrier}
+                                                    onChange={(e) => setTrackingInfo({ ...trackingInfo, carrier: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] text-gray-400 uppercase font-bold tracking-tight">Tracking ID (TID)</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="TID123..."
+                                                    className="w-full text-xs p-2.5 border border-gray-200 focus:outline-none focus:border-admin-primary bg-white"
+                                                    value={trackingInfo.trackingId}
+                                                    onChange={(e) => setTrackingInfo({ ...trackingInfo, trackingId: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                        <button
+                                            disabled={isActionLoading}
+                                            onClick={() => {
+                                                if (!trackingInfo.carrier || !trackingInfo.trackingId) return alert("Please enter both Partner and TID");
+                                                updateStatus(selectedOrder.id, 'shipped', {
+                                                    deliveryPartner: trackingInfo.carrier,
+                                                    trackingId: trackingInfo.trackingId
+                                                });
+                                                setTrackingInfo({ trackingId: '', carrier: '' });
+                                            }}
+                                            className="w-full py-4 bg-gray-900 text-white text-[9px] font-bold uppercase tracking-[0.2em] hover:bg-admin-primary transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                                        >
+                                            {isActionLoading ? 'Processing Handover...' : 'Confirm Handover to Partner'}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {selectedOrder.trackingId && (
+                                    <div className="border-l-4 border-admin-primary/20 pl-4 py-4 bg-admin-primary/5">
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Shipping via</p>
+                                        <p className="text-sm font-bold text-gray-900 uppercase tracking-tight">{selectedOrder.deliveryPartner}</p>
+                                        <p className="text-[10px] text-admin-primary font-bold uppercase tracking-widest mt-1">TID: {selectedOrder.trackingId}</p>
+                                    </div>
+                                )}
                             </div>
+
 
                             {/* Shipment Info */}
                             <div className="space-y-4">
-                                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Destination</h4>
+                                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Shipping Address</h4>
                                 <div className="bg-gray-50 p-6 space-y-2">
                                     <p className="text-sm font-bold text-gray-900">
-                                        {selectedOrder.customerName || `${selectedOrder.firstName || ''} ${selectedOrder.lastName || ''}` || 'Unknown Ritualist'}
+                                        {selectedOrder.customerName || `${selectedOrder.firstName || ''} ${selectedOrder.lastName || ''}` || 'Customer'}
                                     </p>
                                     <div className="text-xs text-gray-500 leading-relaxed uppercase tracking-wider">
-                                        <p>{selectedOrder.shippingAddress?.address || selectedOrder.address || 'Address not manifested'}</p>
+                                        <p>{selectedOrder.shippingAddress?.address || selectedOrder.address || 'Address not found'}</p>
                                         <p>
                                             {selectedOrder.shippingAddress?.city || selectedOrder.city || ''}
                                             {(selectedOrder.shippingAddress?.city || selectedOrder.city) && (selectedOrder.shippingAddress?.pincode || selectedOrder.pincode) ? ', ' : ''}
@@ -166,15 +262,16 @@ function AdminOrders() {
                                 </div>
                             </div>
 
-                            {/* Item Manifest */}
+                            {/* Order Items */}
                             <div className="space-y-4">
-                                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Constituent Items</h4>
+
+                                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Products</h4>
                                 <div className="space-y-6">
                                     {selectedOrder.items?.map((item, idx) => (
                                         <div key={idx} className="flex justify-between items-center group">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-12 h-12 bg-gray-100 grayscale group-hover:grayscale-0 transition-all overflow-hidden">
-                                                    <img src={item.imageUrl || item.image || "//public/default-images/generic.svg"} className="w-full h-full object-cover" alt="" />
+                                                    <img src={item.imageUrl || item.image || "/default-product.png"} className="w-full h-full object-cover" alt="" />
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-bold text-gray-900">{item.name}</p>
@@ -190,13 +287,14 @@ function AdminOrders() {
 
                         <div className="p-8 border-t border-gray-100 bg-gray-50">
                             <div className="flex justify-between items-center">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ritual Total</span>
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Order Total</span>
                                 <span className="text-2xl font-serif text-gray-900 font-bold">₹{(selectedOrder.totalAmount || selectedOrder.total)?.toLocaleString()}</span>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
+
         </div>
     );
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { auth, db, functions } from '../../firebase';
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import { HiOutlineTrash, HiOutlineUserGroup, HiOutlineShieldCheck } from 'react-icons/hi';
+import { HiOutlineTrash, HiOutlineShieldCheck } from 'react-icons/hi';
 
 function AdminUsers() {
     const [users, setUsers] = useState([]);
@@ -29,7 +29,7 @@ function AdminUsers() {
     };
 
     const handleDeleteUser = async (id) => {
-        if (window.confirm("Sever this user's connection to the archive?")) {
+        if (window.confirm("Permanently delete this user's account?")) {
             if (auth.currentUser?.uid === id) {
                 window.alert("You cannot delete your own admin account.");
                 return;
@@ -64,18 +64,18 @@ function AdminUsers() {
     return (
         <div className="space-y-12">
             <div>
-                <span className="text-admin-primary text-[10px] font-bold uppercase tracking-[0.5em] block mb-2">Social Fabric</span>
+                <span className="text-admin-primary text-[10px] font-bold uppercase tracking-[0.5em] block mb-2">Accounts</span>
                 <h1 className="text-5xl font-serif text-gray-900 tracking-tighter">User Directory</h1>
             </div>
 
             <div className="bg-white border border-gray-100 rounded-none overflow-hidden">
-                <table className="w-full text-left">
+                <table className="w-full text-left border-collapse">
                     <thead className="bg-gray-50 border-b border-gray-100">
                         <tr>
-                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ritualist</th>
-                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Presence</th>
+                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">User</th>
+                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Role</th>
                             <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Contact</th>
-                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Sanction</th>
+                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -120,7 +120,7 @@ function AdminUsers() {
                 </table>
                 {users.length === 0 && !loading && (
                     <div className="p-32 text-center text-gray-300">
-                        <p className="font-serif italic text-2xl">The archive is silent.</p>
+                        <p className="font-serif italic text-2xl">No users found.</p>
                     </div>
                 )}
             </div>

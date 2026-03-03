@@ -36,7 +36,7 @@ function AdminMessages() {
     return (
         <div className="space-y-12">
             <div>
-                <span className="text-admin-primary text-[10px] font-bold uppercase tracking-[0.5em] block mb-2">Divine Communication</span>
+                <span className="text-admin-primary text-[10px] font-bold uppercase tracking-[0.5em] block mb-2">Support</span>
                 <h1 className="text-5xl font-serif text-gray-900 tracking-tighter">Messages</h1>
             </div>
 
@@ -57,7 +57,7 @@ function AdminMessages() {
                                 </div>
                                 <div className="space-y-4">
                                     <div>
-                                        <p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mb-1">Ritualist</p>
+                                        <p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mb-1">Customer</p>
                                         <p className="text-lg font-serif text-gray-900 leading-tight">{msg.name || 'Anonymous'}</p>
                                     </div>
                                     <div>
@@ -71,10 +71,10 @@ function AdminMessages() {
                                         </div>
                                     )}
                                     <div>
-                                        <p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mb-1">Manifested At</p>
+                                        <p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mb-1">Sent At</p>
                                         <p className="text-sm text-gray-500 font-medium">
                                             {msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleString() :
-                                                msg.createdAt?.seconds ? new Date(msg.createdAt.seconds * 1000).toLocaleString() : 'Ancient'}
+                                                msg.createdAt?.seconds ? new Date(msg.createdAt.seconds * 1000).toLocaleString() : 'N/A'}
                                         </p>
                                     </div>
                                 </div>
@@ -90,7 +90,7 @@ function AdminMessages() {
                 ))}
                 {messages.length === 0 && !loading && (
                     <div className="p-40 text-center text-gray-300 border border-dashed border-gray-100">
-                        <p className="font-serif italic text-2xl">The communication stream is silent.</p>
+                        <p className="font-serif italic text-2xl">No messages found.</p>
                     </div>
                 )}
             </div>
