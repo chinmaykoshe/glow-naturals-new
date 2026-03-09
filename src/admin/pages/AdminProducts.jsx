@@ -133,8 +133,29 @@ function AdminProducts() {
         setIsFormOpen(true);
     };
 
+    const deleteSupabaseImage = async (url) => {
+        if (!url || !url.includes('supabase.co')) return;
+        try {
+            const fileName = url.split('/').pop();
+            const { error } = await supabase.storage
+                .from('glow-naturals')
+                .remove([fileName]);
+            if (error) throw error;
+            console.log("Deleted old image:", fileName);
+        } catch (error) {
+            console.error("Error deleting image from Supabase:", error);
+        }
+    };
+
     const handleDelete = async (id) => {
         if (window.confirm("Archive this product permanently?")) {
+            const product = products.find(p => p.id === id);
+            if (product) {
+                const imgToDelete = product.imageUrl || product.image;
+                if (imgToDelete) {
+                    await deleteSupabaseImage(imgToDelete);
+                }
+            }
             await deleteDoc(doc(db, "products", id));
             fetchProducts();
         }
@@ -206,6 +227,11 @@ function AdminProducts() {
             const { data: { publicUrl } } = supabase.storage
                 .from('glow-naturals')
                 .getPublicUrl(filePath);
+
+            // Delete old image if it was a Supabase URL before updating
+            if (formProduct.imageUrl && formProduct.imageUrl.includes('supabase.co')) {
+                await deleteSupabaseImage(formProduct.imageUrl);
+            }
 
             setFormProduct({ ...formProduct, imageUrl: publicUrl });
             setImageToCrop(null);

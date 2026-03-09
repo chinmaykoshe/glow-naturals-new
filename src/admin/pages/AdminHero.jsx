@@ -37,6 +37,26 @@ function AdminHero() {
         setLoading(false);
     };
 
+    const deleteSupabaseImage = async (url) => {
+        if (!url || !url.includes('supabase.co')) return;
+        try {
+            // Extract file path from URL
+            // Supabase URLs are like: storage/v1/object/public/bucket/path/to/file
+            // We need 'hero/filename'
+            const parts = url.split('/');
+            const fileName = parts[parts.length - 1];
+            const filePath = `hero/${fileName}`;
+
+            const { error } = await supabase.storage
+                .from('glow-naturals')
+                .remove([filePath]);
+            if (error) throw error;
+            console.log("Deleted old hero image:", filePath);
+        } catch (error) {
+            console.error("Error deleting hero image from Supabase:", error);
+        }
+    };
+
     const handleSave = async (e) => {
         e.preventDefault();
         try {
@@ -66,6 +86,11 @@ function AdminHero() {
             const { data: { publicUrl } } = supabase.storage
                 .from('glow-naturals')
                 .getPublicUrl(filePath);
+
+            // Delete old hero image if it was a Supabase URL before updating
+            if (hero.bgImage && hero.bgImage.includes('supabase.co')) {
+                await deleteSupabaseImage(hero.bgImage);
+            }
 
             setHero({ ...hero, bgImage: publicUrl });
             alert("Hero image uploaded successfully!");
