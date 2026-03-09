@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
+import { supabase } from '../../supabase';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import { HiOutlinePlus, HiOutlineTrash, HiOutlinePencilAlt, HiX } from 'react-icons/hi';
+import { HiOutlinePlus, HiOutlineTrash, HiOutlinePencilAlt, HiX, HiOutlineCloudUpload, HiOutlineCheckCircle } from 'react-icons/hi';
+import { AiOutlineLoading3Quarters } from 'react-icons/ai';
+import Cropper from 'react-easy-crop';
 
 const categoryImages = {
     'Skincare': '/default-images/moisturizer.svg',
@@ -38,8 +41,17 @@ const DEFAULT_IMAGES = {
 function AdminProducts() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [uploading, setUploading] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
+
+    // Image Cropping States
+    const [imageToCrop, setImageToCrop] = useState(null);
+    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+    const [showCropper, setShowCropper] = useState(false);
+    const [originalFileName, setOriginalFileName] = useState("");
 
     const [formProduct, setFormProduct] = useState({
         name: '',
@@ -126,6 +138,88 @@ function AdminProducts() {
             await deleteDoc(doc(db, "products", id));
             fetchProducts();
         }
+    };
+
+    const handleImageSelect = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setOriginalFileName(file.name);
+        const reader = new FileReader();
+        reader.addEventListener('load', () => {
+            setImageToCrop(reader.result);
+            setShowCropper(true);
+        });
+        reader.readAsDataURL(file);
+    };
+
+    const onCropComplete = (croppedArea, croppedAreaPixels) => {
+        setCroppedAreaPixels(croppedAreaPixels);
+    };
+
+    const getCroppedImg = async (imageSrc, pixelCrop) => {
+        const image = new Image();
+        image.src = imageSrc;
+        await new Promise((resolve) => (image.onload = resolve));
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = pixelCrop.width;
+        canvas.height = pixelCrop.height;
+
+        ctx.drawImage(
+            image,
+            pixelCrop.x,
+            pixelCrop.y,
+            pixelCrop.width,
+            pixelCrop.height,
+            0,
+            0,
+            pixelCrop.width,
+            pixelCrop.height
+        );
+
+        return new Promise((resolve) => {
+            canvas.toBlob((blob) => {
+                resolve(blob);
+            }, 'image/jpeg');
+        });
+    };
+
+    const handleCropSave = async () => {
+        try {
+            setUploading(true);
+            setShowCropper(false);
+
+            const croppedBlob = await getCroppedImg(imageToCrop, croppedAreaPixels);
+            const fileExt = originalFileName.split('.').pop() || 'jpg';
+            const fileName = `${Math.random()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { data, error } = await supabase.storage
+                .from('glow-naturals')
+                .upload(filePath, croppedBlob);
+
+            if (error) throw error;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('glow-naturals')
+                .getPublicUrl(filePath);
+
+            setFormProduct({ ...formProduct, imageUrl: publicUrl });
+            setImageToCrop(null);
+        } catch (error) {
+            console.error('Error uploading cropped image:', error);
+            alert('Error: ' + error.message);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleImageUpload = async (e) => {
+        // Keeping this for reference, but shifting logic to handleImageSelect + handleCropSave
+        handleImageSelect(e);
     };
 
     return (
@@ -267,6 +361,49 @@ function AdminProducts() {
                                     </select>
                                 </div>
                                 <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Or Upload to Supabase (Square Crop)</label>
+                                    <div className="flex items-center gap-4 mt-1">
+                                        <div className="relative group">
+                                            <div className="w-16 h-16 bg-gray-50 border border-gray-100 overflow-hidden">
+                                                <img
+                                                    src={formProduct.imageUrl || "/default-images/generic.svg"}
+                                                    alt="Preview"
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => e.target.src = "/default-images/generic.svg"}
+                                                />
+                                            </div>
+                                            {formProduct.imageUrl && (
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                                    <HiOutlineCheckCircle className="text-white" size={20} />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex-1 space-y-2">
+                                            <label className={`inline-flex items-center gap-2 px-4 py-2 text-[9px] font-bold uppercase tracking-widest border border-gray-900 cursor-pointer hover:bg-gray-900 hover:text-white transition-all ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                                                {uploading ? (
+                                                    <AiOutlineLoading3Quarters className="animate-spin" size={14} />
+                                                ) : (
+                                                    <HiOutlineCloudUpload size={14} />
+                                                )}
+                                                {uploading ? 'Processing...' : 'Upload & Crop'}
+                                                <input
+                                                    type="file"
+                                                    className="hidden"
+                                                    accept="image/*"
+                                                    onChange={handleImageSelect}
+                                                    disabled={uploading}
+                                                />
+                                            </label>
+                                            {formProduct.imageUrl && formProduct.imageUrl.includes('supabase.co') && (
+                                                <p className="text-[8px] font-bold text-green-600 uppercase tracking-tighter flex items-center gap-1">
+                                                    <HiOutlineCheckCircle size={10} /> Cloud Sync Active
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="space-y-1 pt-4">
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Or Custom URL</label>
                                     <input
                                         type="text"
@@ -468,6 +605,64 @@ function AdminProducts() {
             {products.length === 0 && !loading && (
                 <div className="py-20 md:p-32 text-center text-gray-300">
                     <p className="font-serif italic text-xl md:text-2xl">No products found.</p>
+                </div>
+            )}
+            {/* Image Cropper Modal */}
+            {showCropper && (
+                <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center p-4 md:p-12 animate-fadeIn bg-black/90">
+                    <div className="w-full max-w-2xl bg-white rounded-none overflow-hidden flex flex-col h-[80vh]">
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="text-sm font-bold uppercase tracking-widest">Perfect Square Crop</h3>
+                            <button onClick={() => setShowCropper(false)} className="text-gray-400 hover:text-black">
+                                <HiX size={20} />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 relative bg-gray-100">
+                            <Cropper
+                                image={imageToCrop}
+                                crop={crop}
+                                zoom={zoom}
+                                aspect={1 / 1}
+                                onCropChange={setCrop}
+                                onCropComplete={onCropComplete}
+                                onZoomChange={setZoom}
+                            />
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Zoom Intensity</label>
+                                <input
+                                    type="range"
+                                    value={zoom}
+                                    min={1}
+                                    max={3}
+                                    step={0.1}
+                                    aria-labelledby="Zoom"
+                                    onChange={(e) => setZoom(e.target.value)}
+                                    className="w-full h-1 bg-gray-100 appearance-none cursor-pointer accent-admin-primary"
+                                />
+                            </div>
+
+                            <div className="flex gap-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCropper(false)}
+                                    className="flex-1 border border-gray-900 py-4 text-[10px] font-bold uppercase tracking-widest hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleCropSave}
+                                    className="flex-[2] bg-admin-primary text-white py-4 text-[10px] font-bold uppercase tracking-widest hover:bg-gray-900 shadow-xl"
+                                >
+                                    Crop & Finalize Upload
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

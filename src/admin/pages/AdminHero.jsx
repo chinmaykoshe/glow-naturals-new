@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
+import { supabase } from '../../supabase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { HiOutlineCloudUpload, HiOutlineCheckCircle } from 'react-icons/hi';
+import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 
 function AdminHero() {
     const [hero, setHero] = useState({
@@ -11,6 +14,7 @@ function AdminHero() {
         buttonHref: ''
     });
     const [loading, setLoading] = useState(true);
+    const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
         fetchHero();
@@ -43,6 +47,36 @@ function AdminHero() {
         }
     };
 
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            setUploading(true);
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random()}.${fileExt}`;
+            const filePath = `hero/${fileName}`;
+
+            const { data, error } = await supabase.storage
+                .from('glow-naturals')
+                .upload(filePath, file);
+
+            if (error) throw error;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('glow-naturals')
+                .getPublicUrl(filePath);
+
+            setHero({ ...hero, bgImage: publicUrl });
+            alert("Hero image uploaded successfully!");
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            alert('Error uploading image: ' + error.message);
+        } finally {
+            setUploading(false);
+        }
+    };
+
     return (
         <div className="space-y-8 md:space-y-12 min-h-[90vh] pb-64">
             <div>
@@ -63,16 +97,51 @@ function AdminHero() {
                             placeholder="Pure Botanical Luxury"
                         />
                     </div>
-                    <div className="space-y-2 border-b border-gray-100 pb-2">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Background Image URL</label>
-                        <input
-                            required
-                            type="url"
-                            className="w-full bg-transparent py-2 text-sm text-gray-900 focus:outline-none"
-                            value={hero.bgImage}
-                            onChange={(e) => setHero({ ...hero, bgImage: e.target.value })}
-                            placeholder="https://images.unsplash.com/..."
-                        />
+                    <div className="space-y-4 border-b border-gray-100 pb-4">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Background Atmosphere</label>
+                        <div className="flex flex-col md:flex-row gap-8 items-start">
+                            <div className="w-full md:w-48 aspect-video bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0">
+                                <img
+                                    src={hero.bgImage || "https://images.unsplash.com/photo-1557683316-973673baf926"}
+                                    className="w-full h-full object-cover grayscale opacity-80"
+                                    alt="Preview"
+                                    onError={(e) => e.target.src = "https://images.unsplash.com/photo-1557683316-973673baf926"}
+                                />
+                            </div>
+                            <div className="flex-1 space-y-6 w-full">
+                                <div className="flex items-center gap-4">
+                                    <label className={`flex items-center gap-2 px-6 py-3 text-[10px] font-bold uppercase tracking-widest border border-gray-900 cursor-pointer hover:bg-gray-900 hover:text-white transition-all ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                                        {uploading ? (
+                                            <AiOutlineLoading3Quarters className="animate-spin" size={16} />
+                                        ) : (
+                                            <HiOutlineCloudUpload size={16} />
+                                        )}
+                                        {uploading ? 'Uploading...' : 'Upload New Atmosphere'}
+                                        <input
+                                            type="file"
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                            disabled={uploading}
+                                        />
+                                    </label>
+                                    {hero.bgImage && hero.bgImage.includes('supabase.co') && (
+                                        <HiOutlineCheckCircle className="text-green-500" size={20} title="Uploaded successfully" />
+                                    )}
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] text-gray-400 uppercase tracking-widest block">Or Background Image URL</label>
+                                    <input
+                                        required
+                                        type="url"
+                                        className="w-full bg-transparent py-2 text-sm text-gray-900 focus:outline-none border-t border-gray-50"
+                                        value={hero.bgImage}
+                                        onChange={(e) => setHero({ ...hero, bgImage: e.target.value })}
+                                        placeholder="https://images.unsplash.com/..."
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div className="md:col-span-2 space-y-2 border-b border-gray-100 pb-2">
                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Description (P)</label>
