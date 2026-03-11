@@ -1,7 +1,9 @@
-const nodemailer = require("nodemailer");
+import nodemailer from "nodemailer";
 
-exports.handler = async (event) => {
+export async function handler(event) {
   try {
+    console.log("Function sendOrderEmail triggered");
+    
     if (event.httpMethod !== "POST") {
       return {
         statusCode: 405,
@@ -16,22 +18,48 @@ exports.handler = async (event) => {
       };
     }
 
-    const { email, orderId, total, status, customerName, items, shippingAddress, trackingId, deliveryPartner } =
-      JSON.parse(event.body);
-
-    if (!email || !orderId) {
+    let body;
+    try {
+      body = JSON.parse(event.body);
+    } catch (e) {
+      console.error("JSON parse error:", e);
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: "Required fields missing" }),
+        body: JSON.stringify({ error: "Invalid JSON body" }),
+      };
+    }
+
+    const { email, orderId, total, status, customerName, items, shippingAddress, trackingId, deliveryPartner } = body;
+
+    if (!email || !orderId) {
+      console.error("Missing fields:", { email, orderId });
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Required fields missing (email or orderId)" }),
+      };
+    }
+
+    console.log(`Sending email to: ${email} for order: ${orderId}`);
+
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.error("Environment variables EMAIL_USER or EMAIL_PASS are missing!");
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: "Email configuration missing on server" }),
       };
     }
 
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
+      tls: {
+        rejectUnauthorized: false // Helps with some hosting environments
+      }
     });
 
     const getStatusMessage = (status) => {
@@ -148,18 +176,24 @@ exports.handler = async (event) => {
       `,
     };
 
+    console.log("Transporter created, sending mail...");
     await transporter.sendMail(mailOptions);
+    console.log("Email sent successfully!");
 
     return {
       statusCode: 200,
       body: JSON.stringify({ message: "Email sent successfully" }),
     };
   } catch (error) {
-    console.error("Email error:", error);
+    console.error("Email error detail:", error);
 
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to send email" }),
+      body: JSON.stringify({ 
+        error: "Failed to send email", 
+        details: error.message,
+        code: error.code 
+      }),
     };
   }
-};
+}

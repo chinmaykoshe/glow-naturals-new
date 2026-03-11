@@ -42,6 +42,9 @@ function AdminOrders() {
                 try {
                     await fetch('/.netlify/functions/sendOrderEmail', {
                         method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
                         body: JSON.stringify({
                             email: order.email,
                             orderId: id,
