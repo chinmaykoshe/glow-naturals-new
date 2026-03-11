@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { db } from '../../firebase';
 import { supabase } from '../../supabase';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
@@ -40,7 +41,10 @@ const DEFAULT_IMAGES = {
 
 function AdminProducts() {
     const [products, setProducts] = useState([]);
+    const [filteredProducts, setFilteredProducts] = useState([]);
+    const [dynamicCategories, setDynamicCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const location = useLocation();
     const [uploading, setUploading] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
@@ -68,7 +72,40 @@ function AdminProducts() {
 
     useEffect(() => {
         fetchProducts();
+        fetchDynamicCategories();
     }, []);
+
+    const fetchDynamicCategories = async () => {
+        try {
+            // 1. Get unique categories currently in products
+            const productsSnapshot = await getDocs(collection(db, "products"));
+            const productCategories = new Set();
+            productsSnapshot.forEach(doc => {
+                const cat = doc.data().category;
+                if (cat) productCategories.add(cat);
+            });
+
+            // 2. Get metadata
+            const querySnapshot = await getDocs(collection(db, "categories"));
+            const metadataMap = {};
+            querySnapshot.forEach((doc) => {
+                metadataMap[doc.id] = { id: doc.id, name: doc.id, ...doc.data() };
+            });
+
+            // 3. Merge: Prioritize categories that actually have products
+            const cats = Array.from(productCategories).map(name => ({
+                id: name,
+                name: name,
+                ...metadataMap[name]
+            }));
+
+            // Add metadata-only categories if needed (though user said existence = products)
+            // But we keep it flexible
+            setDynamicCategories(cats);
+        } catch (error) {
+            console.error("Error fetching categories for products:", error);
+        }
+    };
 
     const fetchProducts = async () => {
         try {
@@ -77,13 +114,29 @@ function AdminProducts() {
             querySnapshot.forEach((doc) => {
                 p.push({ id: doc.id, ...doc.data() });
             });
-            setProducts(p.sort((a, b) => b.updatedAt?.seconds - a.updatedAt?.seconds));
+            const sorted = p.sort((a, b) => b.updatedAt?.seconds - a.updatedAt?.seconds);
+            setProducts(sorted);
+            setFilteredProducts(sorted);
             setLoading(false);
         } catch (error) {
             console.error("Error fetching products:", error);
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const search = params.get('search')?.toLowerCase();
+        if (search) {
+            setFilteredProducts(products.filter(p =>
+                p.name?.toLowerCase().includes(search) ||
+                p.category?.toLowerCase().includes(search) ||
+                p.description?.toLowerCase().includes(search)
+            ));
+        } else {
+            setFilteredProducts(products);
+        }
+    }, [location.search, products]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -95,7 +148,8 @@ function AdminProducts() {
         };
 
         if (!productData.imageUrl) {
-            productData.imageUrl = categoryImages[formProduct.category] || "/default-images/generic.svg";
+            const foundCat = dynamicCategories.find(c => c.name === formProduct.category);
+            productData.imageUrl = foundCat?.imageUrl || categoryImages[formProduct.category] || "/default-images/generic.svg";
         }
 
         try {
@@ -243,11 +297,6 @@ function AdminProducts() {
         }
     };
 
-    const handleImageUpload = async (e) => {
-        // Keeping this for reference, but shifting logic to handleImageSelect + handleCropSave
-        handleImageSelect(e);
-    };
-
     return (
         <div className="space-y-8 md:space-y-12 min-h-[90vh] pb-64">
             {/* Header Section - Responsive */}
@@ -322,18 +371,25 @@ function AdminProducts() {
                                     placeholder="e.g. Wellness, Skincare"
                                     value={formProduct.category}
                                     onChange={(e) => {
-                                        const cat = e.target.value;
+                                        const catName = e.target.value;
+                                        const foundCat = dynamicCategories.find(c => c.name === catName);
                                         setFormProduct({
                                             ...formProduct,
-                                            category: cat,
-                                            imageUrl: formProduct.imageUrl || categoryImages[cat] || ''
+                                            category: catName,
+                                            imageUrl: formProduct.imageUrl || foundCat?.imageUrl || categoryImages[catName] || ''
                                         });
                                     }}
                                 />
                                 <datalist id="category-suggestions">
-                                    {Object.keys(categoryImages).map(cat => (
-                                        <option key={cat} value={cat} />
-                                    ))}
+                                    {dynamicCategories.length > 0 ? (
+                                        dynamicCategories.map(cat => (
+                                            <option key={cat.id} value={cat.name} />
+                                        ))
+                                    ) : (
+                                        Object.keys(categoryImages).map(cat => (
+                                            <option key={cat} value={cat} />
+                                        ))
+                                    )}
                                 </datalist>
                             </div>
                             <div className="space-y-2 border-b border-gray-100 pb-2">
@@ -508,7 +564,7 @@ function AdminProducts() {
 
             {/* Desktop Table View - Hidden on Mobile */}
             <div className="hidden md:block bg-white border border-gray-100 overflow-hidden rounded-none shadow-none">
-                <table className="w-full text-left">
+                <table className="w-full text-left border-collapse">
                     <thead className="bg-gray-50 border-b border-gray-100">
                         <tr>
                             <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Product</th>
@@ -519,14 +575,14 @@ function AdminProducts() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                        {products.map((p) => {
+                        {filteredProducts.map((p) => {
                             const getCleanImage = (url) => {
                                 if (!url) return "/default-images/generic.svg";
                                 return url.replace("//public/", "/");
                             };
                             const pImage = getCleanImage(p.imageUrl || p.image);
                             const pPrice = p.retailPrice || p.price;
-                            const pStock = p.stock || p.inventory;
+                            const pStock = p.stock || p.inventory || 0;
 
                             return (
                                 <tr key={p.id} className="hover:bg-gray-50/50 transition-all group">
@@ -549,8 +605,8 @@ function AdminProducts() {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-5 text-sm text-gray-400 uppercase tracking-widest font-bold text-[9px]">{p.category}</td>
-                                    <td className="px-8 py-5 text-sm text-gray-900 font-bold">₹{pPrice?.toLocaleString()}</td>
+                                    <td className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{p.category}</td>
+                                    <td className="px-8 py-5 text-sm text-gray-900 font-bold font-serif italic">₹{pPrice?.toLocaleString()}</td>
                                     <td className="px-8 py-5">
                                         <span className={`text-[9px] font-bold px-3 py-1 ${pStock < 5 ? 'bg-red-50 text-red-600' : 'bg-green-50 text-admin-primary'}`}>
                                             {pStock} UNITS
@@ -575,7 +631,7 @@ function AdminProducts() {
 
             {/* Mobile Card View - Visible only on Small Screens */}
             <div className="md:hidden space-y-4">
-                {products.map((p) => {
+                {filteredProducts.map((p) => {
                     const getCleanImage = (url) => {
                         if (!url) return "/default-images/generic.svg";
                         return url.replace("//public/", "/");
@@ -595,17 +651,17 @@ function AdminProducts() {
                                 />
                                 <div className="flex-1 space-y-1">
                                     <div className="flex flex-wrap gap-2 text-[8px] uppercase font-bold tracking-widest pb-1 border-b border-gray-50 mb-1">
-                                        <span className="text-gray-400 mr-auto">{p.category}</span>
+                                        <span className="text-gray-400 mr-auto text-[7px]">{p.category}</span>
                                         {p.bestseller && <span className="bg-admin-primary text-white px-2 py-0.5">Bestseller</span>}
                                         {p.newArrival && <span className="bg-gray-900 text-white px-2 py-0.5">New Arrival</span>}
                                     </div>
-                                    <p className="font-bold text-gray-900 leading-tight">{p.name}</p>
-                                    <p className="font-bold text-gray-900 pt-1">₹{pPrice?.toLocaleString()}</p>
+                                    <p className="font-bold text-gray-900 leading-tight text-sm">{p.name}</p>
+                                    <p className="font-serif italic font-bold text-gray-900 pt-1">₹{pPrice?.toLocaleString()}</p>
                                 </div>
                             </div>
 
                             <div className="flex items-center justify-between pt-2 border-t border-gray-50">
-                                <div className={`text-[10px] font-bold px-3 py-1 ${pStock < 5 ? 'bg-red-50 text-red-600' : 'bg-green-50 text-admin-primary'}`}>
+                                <div className={`text-[9px] font-bold px-3 py-1 ${pStock < 5 ? 'bg-red-50 text-red-600' : 'bg-green-50 text-admin-primary'}`}>
                                     {pStock} IN STOCK
                                 </div>
                                 <div className="flex gap-4">
@@ -628,9 +684,9 @@ function AdminProducts() {
                 })}
             </div>
 
-            {products.length === 0 && !loading && (
+            {filteredProducts.length === 0 && !loading && (
                 <div className="py-20 md:p-32 text-center text-gray-300">
-                    <p className="font-serif italic text-xl md:text-2xl">No products found.</p>
+                    <p className="font-serif italic text-xl md:text-2xl">No creations found matching your search.</p>
                 </div>
             )}
             {/* Image Cropper Modal */}
@@ -675,14 +731,14 @@ function AdminProducts() {
                                 <button
                                     type="button"
                                     onClick={() => setShowCropper(false)}
-                                    className="flex-1 border border-gray-900 py-4 text-[10px] font-bold uppercase tracking-widest hover:bg-gray-50"
+                                    className="flex-1 border border-gray-900 py-4 text-[10px] font-bold uppercase tracking-widest hover:bg-gray-50 font-sans"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="button"
                                     onClick={handleCropSave}
-                                    className="flex-[2] bg-admin-primary text-white py-4 text-[10px] font-bold uppercase tracking-widest hover:bg-gray-900 shadow-xl"
+                                    className="flex-[2] bg-admin-primary text-white py-4 text-[10px] font-bold uppercase tracking-widest hover:bg-gray-900 shadow-xl font-sans"
                                 >
                                     Crop & Finalize Upload
                                 </button>

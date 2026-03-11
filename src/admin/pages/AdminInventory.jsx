@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { db } from '../../firebase';
 import { collection, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { HiOutlineStar, HiOutlineSparkles, HiStar, HiSparkles } from 'react-icons/hi';
 
 function AdminInventory() {
     const [products, setProducts] = useState([]);
+    const [filteredProducts, setFilteredProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const location = useLocation();
 
     useEffect(() => {
         fetchProducts();
@@ -19,12 +22,26 @@ function AdminInventory() {
                 p.push({ id: doc.id, ...doc.data() });
             });
             setProducts(p);
+            setFilteredProducts(p);
             setLoading(false);
         } catch (error) {
             console.error("Error fetching inventory:", error);
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const search = params.get('search')?.toLowerCase();
+        if (search) {
+            setFilteredProducts(products.filter(p =>
+                p.name?.toLowerCase().includes(search) ||
+                p.category?.toLowerCase().includes(search)
+            ));
+        } else {
+            setFilteredProducts(products);
+        }
+    }, [location.search, products]);
 
     const updateStock = async (id, newStock) => {
         if (newStock === '') return;
@@ -72,7 +89,7 @@ function AdminInventory() {
 
             <div className="bg-white border border-gray-100 rounded-none overflow-hidden">
                 <div className="grid grid-cols-1 divide-y divide-gray-50">
-                    {products.map((p) => {
+                    {filteredProducts.map((p) => {
                         const getCleanImage = (url) => {
                             if (!url) return "/default-images/generic.svg";
                             if (typeof url === 'string' && url.startsWith("//public/")) {
@@ -135,9 +152,9 @@ function AdminInventory() {
                             </div>
                         );
                     })}
-                    {products.length === 0 && !loading && (
+                    {filteredProducts.length === 0 && !loading && (
                         <div className="py-20 text-center text-gray-300">
-                            <p className="font-serif italic text-xl">No products found.</p>
+                            <p className="font-serif italic text-xl">No products matched your search.</p>
                         </div>
                     )}
                 </div>

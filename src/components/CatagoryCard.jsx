@@ -1,18 +1,52 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 function CatagoryCard({ category }) {
     const { name, items, image, path = "/shop" } = category;
+    const [imgSrc, setImgSrc] = useState(image);
+    const [isLoading, setIsLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
+
+    const FALLBACK_IMAGE = "/default-images/generic.svg";
+
+    useEffect(() => {
+        // Reset state if image prop changes
+        setImgSrc(image);
+        setIsLoading(true);
+        setHasError(false);
+
+        // Timeout logic: if image hasn't loaded in 2.5 seconds, use fallback
+        const timer = setTimeout(() => {
+            if (isLoading) {
+                console.log(`Image loading timeout for ${name}, using fallback.`);
+                setImgSrc(FALLBACK_IMAGE);
+            }
+        }, 2500);
+
+        return () => clearTimeout(timer);
+    }, [image, name]);
+
+    const handleLoad = () => {
+        setIsLoading(false);
+    };
+
+    const handleError = () => {
+        setHasError(true);
+        setIsLoading(false);
+        setImgSrc(FALLBACK_IMAGE);
+    };
 
     return (
         <Link
             to={path}
-            className="group relative h-[220px] sm:h-[300px] md:h-[500px] overflow-hidden bg-gray-100 block"
+            className="group relative h-[220px] sm:h-[300px] md:h-[500px] overflow-hidden bg-gray-50 block"
         >
             <img
-                src={image}
+                src={imgSrc || FALLBACK_IMAGE}
                 alt={name}
-                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                onLoad={handleLoad}
+                onError={handleError}
+                className={`w-full h-full object-cover transition-all duration-1000 group-hover:scale-105 ${isLoading ? 'blur-sm grayscale opacity-50' : 'blur-0 grayscale-0 opacity-100'}`}
             />
 
             {/* Subtle Overlay */}

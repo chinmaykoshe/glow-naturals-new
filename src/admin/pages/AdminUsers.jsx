@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db, functions } from '../../firebase';
+import { useLocation } from 'react-router-dom';
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { HiOutlineTrash, HiOutlineShieldCheck } from 'react-icons/hi';
 
 function AdminUsers() {
     const [users, setUsers] = useState([]);
+    const [filteredUsers, setFilteredUsers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const location = useLocation();
     const [deletingUserId, setDeletingUserId] = useState(null);
 
     useEffect(() => {
@@ -21,12 +24,28 @@ function AdminUsers() {
                 u.push({ id: doc.id, ...doc.data() });
             });
             setUsers(u);
+            setFilteredUsers(u);
             setLoading(false);
         } catch (error) {
             console.error("Error fetching users:", error);
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const search = params.get('search')?.toLowerCase();
+        if (search) {
+            setFilteredUsers(users.filter(u =>
+                u.displayName?.toLowerCase().includes(search) ||
+                u.email?.toLowerCase().includes(search) ||
+                u.id?.toLowerCase().includes(search) ||
+                u.phone?.toLowerCase().includes(search)
+            ));
+        } else {
+            setFilteredUsers(users);
+        }
+    }, [location.search, users]);
 
     const handleDeleteUser = async (id) => {
         if (window.confirm("Permanently delete this user's account?")) {
@@ -84,7 +103,7 @@ function AdminUsers() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                        {users.map((user) => (
+                        {filteredUsers.map((user) => (
                             <tr key={user.id} className="hover:bg-gray-50/50 transition-all group">
                                 <td className="px-8 py-5">
                                     <div className="flex items-center gap-4">
@@ -136,7 +155,7 @@ function AdminUsers() {
 
             {/* Mobile Card View - Visible only on Small Screens */}
             <div className="md:hidden space-y-4">
-                {users.map((user) => (
+                {filteredUsers.map((user) => (
                     <div key={user.id} className="bg-white border border-gray-100 p-5 space-y-4">
                         <div className="flex items-start justify-between">
                             <div className="flex items-center gap-4">
@@ -180,7 +199,7 @@ function AdminUsers() {
                 ))}
             </div>
 
-            {users.length === 0 && !loading && (
+            {filteredUsers.length === 0 && !loading && (
                 <div className="py-20 md:p-32 text-center text-gray-300">
                     <p className="font-serif italic text-xl md:text-2xl">No users found.</p>
                 </div>

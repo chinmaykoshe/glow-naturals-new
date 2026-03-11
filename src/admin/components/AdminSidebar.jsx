@@ -16,6 +16,7 @@ import {
 const menuItems = [
     { name: 'Dashboard', icon: HiOutlineViewGrid, path: '/admin' },
     { name: 'Products', icon: HiOutlineShoppingBag, path: '/admin/products' },
+    { name: 'Categories', icon: HiOutlineCube, path: '/admin/categories' },
     { name: 'Inventory', icon: HiOutlineCube, path: '/admin/inventory' },
     { name: 'Orders', icon: HiOutlineClipboardList, path: '/admin/orders' },
     { name: 'Users', icon: HiOutlineUsers, path: '/admin/users' },

@@ -31,6 +31,7 @@ import AdminUsers from "./admin/pages/AdminUsers";
 import AdminHero from "./admin/pages/AdminHero";
 import AdminMessages from "./admin/pages/AdminMessages";
 import AdminReviews from "./admin/pages/AdminReviews";
+import AdminCategories from "./admin/pages/AdminCategories";
 
 function AppContent() {
   const { isCartOpen, setIsCartOpen } = useCart();
@@ -68,6 +69,7 @@ function AppContent() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="products" element={<AdminProducts />} />
+          <Route path="categories" element={<AdminCategories />} />
           <Route path="inventory" element={<AdminInventory />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="users" element={<AdminUsers />} />

@@ -3,34 +3,35 @@ import CatagoryCard from "../components/CatagoryCard";
 import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
 
-const categoryImages = {
-    'Skincare': 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&w=600&q=80',
-    'Body Care': 'https://images.unsplash.com/photo-1612817288484-6f916006741a?auto=format&fit=crop&w=600&q=80',
-    'Wellness': 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80',
-    'Hair Care': 'https://images.unsplash.com/photo-1594125355930-bc63630f9a2d?auto=format&fit=crop&w=600&q=80',
-    'Essential Oils': 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80',
-    'Face': 'https://images.unsplash.com/photo-1601049541289-9b1b7be00e57?auto=format&fit=crop&w=600&q=80'
-};
-
 function Categories() {
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchCategories = async () => {
+        const fetchCategoriesData = async () => {
             try {
-                const querySnapshot = await getDocs(collection(db, "products"));
+                // Fetch category definitions (images etc)
+                const catDefSnapshot = await getDocs(collection(db, "categories"));
+                const catDefs = {};
+                catDefSnapshot.forEach(doc => {
+                    catDefs[doc.data().name] = doc.data();
+                });
+
+                // Fetch products to count items per category
+                const productSnapshot = await getDocs(collection(db, "products"));
                 const catMap = {};
-                querySnapshot.forEach(doc => {
+                productSnapshot.forEach(doc => {
                     const data = doc.data();
                     if (data.category) {
-                        if (catMap[data.category]) {
-                            catMap[data.category].count++;
+                        const catName = data.category;
+                        if (catMap[catName]) {
+                            catMap[catName].count++;
                         } else {
-                            catMap[data.category] = {
-                                name: data.category,
+                            catMap[catName] = {
+                                name: catName,
                                 count: 1,
-                                image: data.imageUrl || categoryImages[data.category] || 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=600&q=80'
+                                image: catDefs[catName]?.imageUrl || data.imageUrl || data.image || '/default-images/generic.svg',
+                                path: `/shop?search=${encodeURIComponent(catName)}`
                             };
                         }
                     }
@@ -42,7 +43,7 @@ function Categories() {
                 setLoading(false);
             }
         };
-        fetchCategories();
+        fetchCategoriesData();
     }, []);
 
     if (loading) return (

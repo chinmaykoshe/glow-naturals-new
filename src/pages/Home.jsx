@@ -2,19 +2,16 @@ import React, { useState, useEffect } from 'react'
 import Hero from '../components/Hero'
 import CatagoryCard from '../components/CatagoryCard'
 import ProductCard from '../components/ProductCard'
+import { useNavigate } from 'react-router-dom'
 import { HiOutlineSparkles, HiOutlineShieldCheck, HiOutlineReceiptTax, HiOutlineArrowRight } from "react-icons/hi";
 import { db } from '../firebase'
-import { collection, query, limit, getDocs, where } from 'firebase/firestore'
-
-const featuredCategories = [
-    { name: "Skincare", items: "24 Products", image: "https://images.unsplash.com/photo-1556228578-0d85b1a4d571?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" },
-    { name: "Body Care", items: "18 Products", image: "https://images.unsplash.com/photo-1612817288484-6f916006741a?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" },
-    { name: "Wellness", items: "15 Products", image: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" },
-];
+import { collection, query, limit, getDocs, where, orderBy } from 'firebase/firestore'
 
 function Home() {
     const [trendingProducts, setTrendingProducts] = useState([]);
     const [newArrivals, setNewArrivals] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchHomeData = async () => {
@@ -44,12 +41,54 @@ function Home() {
 
                 setTrendingProducts(bestsellers);
                 setNewArrivals(arrivals);
+
+                // Fetch Featured Categories from Metadata
+                const cQ = query(collection(db, "categories"), where("isFeatured", "==", true), limit(6));
+                const cSnapshot = await getDocs(cQ);
+                let cats = [];
+                cSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const name = data.name || doc.id;
+                    cats.push({
+                        id: doc.id,
+                        name: name,
+                        image: data.imageUrl,
+                        path: `/shop?search=${encodeURIComponent(name)}`
+                    });
+                });
+
+                // If no featured categories, fallback to first 3 available categories
+                if (cats.length === 0) {
+                    const allProductsSnapshot = await getDocs(collection(db, "products"));
+                    const allCatNames = new Set();
+                    allProductsSnapshot.forEach(doc => {
+                        const c = doc.data().category;
+                        if (c) allCatNames.add(c);
+                    });
+
+                    // Get metadata for these fallbacks too
+                    const metaSnap = await getDocs(collection(db, "categories"));
+                    const metaMap = {};
+                    metaSnap.forEach(doc => metaMap[doc.id] = doc.data());
+
+                    Array.from(allCatNames).slice(0, 3).forEach(name => {
+                        cats.push({
+                            id: name,
+                            name: name,
+                            image: metaMap[name]?.imageUrl || "",
+                            path: `/shop?search=${encodeURIComponent(name)}`
+                        });
+                    });
+                }
+
+                setCategories(cats);
             } catch (error) {
                 console.error("Error fetching home data:", error);
             }
         };
         fetchHomeData();
     }, []);
+
     return (
         <main className="bg-white">
             <Hero />
@@ -78,24 +117,26 @@ function Home() {
             </section>
 
             {/* Top Categories */}
-            <section className="py-32 px-6 md:px-12 bg-gray-50">
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex items-end justify-between mb-20 px-4">
-                        <div className="space-y-4">
-                            <span className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.5em] block">Top Collections</span>
-                            <h2 className="text-5xl font-serif text-gray-900 tracking-tighter leading-none">Shop by Category</h2>
+            {categories.length > 0 && (
+                <section className="py-32 px-6 md:px-12 bg-gray-50">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="flex items-end justify-between mb-20 px-4">
+                            <div className="space-y-4">
+                                <span className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.5em] block">Top Collections</span>
+                                <h2 className="text-5xl font-serif text-gray-900 tracking-tighter leading-none">Shop by Category</h2>
+                            </div>
+                            <button onClick={() => navigate('/shop')} className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-900 flex items-center gap-2 group border-b border-gray-900 pb-2">
+                                Explore All <HiOutlineArrowRight className="group-hover:translate-x-1 transition-transform" />
+                            </button>
                         </div>
-                        <button onClick={() => navigate('/shop')} className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-900 flex items-center gap-2 group border-b border-gray-900 pb-2">
-                            Explore All <HiOutlineArrowRight className="group-hover:translate-x-1 transition-transform" />
-                        </button>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
+                            {categories.map((cat) => (
+                                <CatagoryCard key={cat.name} category={cat} />
+                            ))}
+                        </div>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
-                        {featuredCategories.map((cat) => (
-                            <CatagoryCard key={cat.name} category={cat} />
-                        ))}
-                    </div>
-                </div>
-            </section>
+                </section>
+            )}
 
             {/* New Arrivals */}
             <section className="py-32 px-6 md:px-12">

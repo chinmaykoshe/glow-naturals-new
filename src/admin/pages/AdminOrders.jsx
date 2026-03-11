@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
 import { collection, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { useLocation } from 'react-router-dom';
 import { HiOutlineX, HiOutlineDotsVertical, HiOutlineEye, HiOutlineTrash } from 'react-icons/hi';
 
 function AdminOrders() {
     const [orders, setOrders] = useState([]);
+    const [filteredOrders, setFilteredOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const location = useLocation();
     const [selectedOrder, setSelectedOrder] = useState(null);
 
     useEffect(() => {
@@ -19,13 +22,31 @@ function AdminOrders() {
             querySnapshot.forEach((doc) => {
                 o.push({ id: doc.id, ...doc.data() });
             });
-            setOrders(o.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+            const sorted = o.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            setOrders(sorted);
+            setFilteredOrders(sorted);
             setLoading(false);
         } catch (error) {
             console.error("Error fetching orders:", error);
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const search = params.get('search')?.toLowerCase();
+        if (search) {
+            setFilteredOrders(orders.filter(o =>
+                o.id?.toLowerCase().includes(search) ||
+                o.customerName?.toLowerCase().includes(search) ||
+                o.email?.toLowerCase().includes(search) ||
+                o.status?.toLowerCase().includes(search) ||
+                o.phone?.toLowerCase().includes(search)
+            ));
+        } else {
+            setFilteredOrders(orders);
+        }
+    }, [location.search, orders]);
 
     const [trackingInfo, setTrackingInfo] = useState({ trackingId: '', carrier: '' });
     const [isActionLoading, setIsActionLoading] = useState(false);
@@ -112,7 +133,7 @@ function AdminOrders() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                        {orders.map((order) => (
+                        {filteredOrders.map((order) => (
                             <tr key={order.id} className="hover:bg-gray-50/50 transition-all group">
                                 <td className="px-8 py-5 font-mono text-[10px] text-gray-400">#{order.id.slice(0, 10).toUpperCase()}</td>
                                 <td className="px-8 py-5">
@@ -151,7 +172,7 @@ function AdminOrders() {
 
             {/* Mobile Card View - Visible only on Small Screens */}
             <div className="md:hidden space-y-4">
-                {orders.map((order) => (
+                {filteredOrders.map((order) => (
                     <div key={order.id} className="bg-white border border-gray-100 p-5 space-y-4">
                         <div className="flex justify-between items-start">
                             <div>
@@ -189,7 +210,7 @@ function AdminOrders() {
                 ))}
             </div>
 
-            {orders.length === 0 && !loading && (
+            {filteredOrders.length === 0 && !loading && (
                 <div className="py-20 md:p-32 text-center text-gray-300">
                     <p className="font-serif italic text-xl">No orders found.</p>
                 </div>
