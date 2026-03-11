@@ -222,42 +222,46 @@ function Navig() {
       >
         <div className="flex flex-col gap-6 flex-1 overflow-y-auto custom-scrollbar pb-10">
           {navItems.map((item, index) => (
-            <div key={item.name} className="space-y-4">
+            <div 
+              key={item.name} 
+              className={`space-y-4 border-b border-gray-100 pb-6 transition-all transform ${open ? "translate-x-0 opacity-100" : "-translate-x-4 opacity-0"}`}
+              style={{ transitionDelay: `${index * 50}ms` }}
+            >
               {item.name === "Categories" ? (
                 <>
-                  <button
-                    onClick={() =>
-                      setMobileCatsOpen((prev) => !prev)
-                    }
-                    className={`w-full text-left text-4xl font-serif font-medium text-gray-900 flex items-center justify-between transition-all transform ${open
-                      ? "translate-x-0 opacity-100"
-                      : "-translate-x-4 opacity-0"
-                      }`}
-                    style={{
-                      transitionDelay: `${index * 50}ms`,
-                    }}
-                  >
-                    {item.name}
-                    <HiChevronDown
-                      className={`transition-transform duration-300 ${mobileCatsOpen ? "rotate-180" : ""
-                        }`}
-                      size={24}
-                    />
-                  </button>
+                  <div className="flex items-center justify-between">
+                    <Link
+                      to={item.path}
+                      onClick={() => {
+                        setOpen(false);
+                        setMobileCatsOpen(false);
+                      }}
+                      className="text-4xl font-serif font-medium text-gray-900"
+                    >
+                      {item.name}
+                    </Link>
+                    <button
+                      onClick={() => setMobileCatsOpen((prev) => !prev)}
+                      className="p-4 border-l border-gray-100"
+                    >
+                      <HiChevronDown
+                        className={`transition-transform duration-300 text-gray-400 ${mobileCatsOpen ? "rotate-180" : ""}`}
+                        size={24}
+                      />
+                    </button>
+                  </div>
                   <div
-                    className={`overflow-hidden transition-all duration-300 grid gap-4 pl-4 border-l border-gray-100 ${mobileCatsOpen
-                      ? "max-h-96 opacity-100 mt-4"
+                    className={`overflow-hidden transition-all duration-500 ease-in-out grid gap-6 pl-4 border-l-2 border-admin-primary/20 ${mobileCatsOpen
+                      ? "max-h-[500px] opacity-100 mt-6 pb-2"
                       : "max-h-0 opacity-0"
                       }`}
                   >
                     {categories.map((cat) => (
                       <Link
                         key={cat}
-                        to={`/shop?search=${encodeURIComponent(
-                          cat
-                        )}`}
+                        to={`/shop?search=${encodeURIComponent(cat)}`}
                         onClick={() => setOpen(false)}
-                        className="text-sm font-bold text-gray-400 uppercase tracking-widest hover:text-admin-primary"
+                        className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.3em] hover:text-admin-primary transition-colors"
                       >
                         {cat}
                       </Link>
@@ -271,13 +275,7 @@ function Navig() {
                     setOpen(false);
                     setMobileCatsOpen(false);
                   }}
-                  className={`block text-4xl font-serif font-medium text-gray-900 transition-all transform ${open
-                    ? "translate-x-0 opacity-100"
-                    : "-translate-x-4 opacity-0"
-                    }`}
-                  style={{
-                    transitionDelay: `${index * 50}ms`,
-                  }}
+                  className="block text-4xl font-serif font-medium text-gray-900"
                 >
                   {item.name}
                 </Link>

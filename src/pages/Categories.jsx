@@ -56,9 +56,9 @@ function Categories() {
         <main className="min-h-screen bg-white pt-24 md:pt-32 px-4 md:px-8 py-14">
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-16">
-                    <span className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.5em] block mb-4">Our Worlds</span>
-                    <h1 className="text-6xl font-serif text-gray-900 tracking-tighter leading-none mb-4">Shop by Category</h1>
-                    <p className="text-gray-400 max-w-xl mx-auto text-lg leading-relaxed">
+                    <span className="text-admin-primary text-[10px] font-bold uppercase tracking-[0.5em] mb-4 block">Our Worlds</span>
+                    <h1 className="text-5xl font-serif text-gray-900 mb-6 tracking-tighter">Shop by Category</h1>
+                    <p className="text-gray-400 max-w-xl mx-auto text-lg leading-relaxed font-light">
                         Find exactly what you are looking for. Explore our nature-inspired collections
                         designed for every part of your beauty routine.
                     </p>
