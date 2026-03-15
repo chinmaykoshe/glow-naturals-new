@@ -11,4 +11,13 @@ export default defineConfig({
   resolve: {
     dedupe: ['react', 'react-dom'],
   },
+  server: {
+    proxy: {
+      '/.netlify/functions': {
+        target: 'http://localhost:8888',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  }
 })
