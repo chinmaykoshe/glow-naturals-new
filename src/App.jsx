@@ -19,7 +19,10 @@ import Cart from "./components/Cart";
 import { CartProvider, useCart } from "./context/CartContext";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import Help from "./pages/Help";
 import ScrollToTop from "./components/ScrollToTop";
+import CookieConsent from "./components/CookieConsent";
+import { NotificationProvider } from "./context/NotificationContext";
 
 // Admin Imports
 import AdminLayout from "./admin/components/AdminLayout";
@@ -41,6 +44,7 @@ function AppContent() {
   return (
     <div className="relative">
       <ScrollToTop />
+      <CookieConsent />
       {!isAdminPath && <Navig />}
       <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
 
@@ -62,6 +66,7 @@ function AppContent() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/help" element={<Help />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
 
@@ -86,9 +91,11 @@ function AppContent() {
 
 function App() {
   return (
-    <CartProvider>
-      <AppContent />
-    </CartProvider>
+    <NotificationProvider>
+      <CartProvider>
+        <AppContent />
+      </CartProvider>
+    </NotificationProvider>
   );
 }
 

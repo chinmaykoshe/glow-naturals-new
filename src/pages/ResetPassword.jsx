@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { confirmPasswordReset, verifyPasswordResetCode } from "firebase/auth";
 import { auth } from "../firebase";
-import { HiCheckCircle, HiExclamationCircle } from "react-icons/hi";
+import { HiCheckCircle, HiExclamationCircle, HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
 
 function ResetPassword() {
     const [searchParams] = useSearchParams();
@@ -14,6 +14,8 @@ function ResetPassword() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState({ type: "", text: "" });
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const oobCode = searchParams.get("oobCode");
 
@@ -99,26 +101,44 @@ function ResetPassword() {
                         <form className="space-y-6" onSubmit={handleSubmit}>
                             <div className="space-y-2 border-b border-gray-100 pb-2">
                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">New Password</label>
-                                <input
-                                    required
-                                    type="password"
-                                    className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="••••••••"
-                                />
+                                <div className="relative">
+                                    <input
+                                        required
+                                        type={showPassword ? "text" : "password"}
+                                        className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900 pr-10"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="••••••••"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-900 transition-colors"
+                                    >
+                                        {showPassword ? <HiOutlineEyeOff size={18} /> : <HiOutlineEye size={18} />}
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="space-y-2 border-b border-gray-100 pb-2">
                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Confirm Password</label>
-                                <input
-                                    required
-                                    type="password"
-                                    className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    placeholder="••••••••"
-                                />
+                                <div className="relative">
+                                    <input
+                                        required
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        className="w-full bg-transparent py-2 text-sm focus:outline-none text-gray-900 pr-10"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        placeholder="••••••••"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-900 transition-colors"
+                                    >
+                                        {showConfirmPassword ? <HiOutlineEyeOff size={18} /> : <HiOutlineEye size={18} />}
+                                    </button>
+                                </div>
                             </div>
 
                             <button

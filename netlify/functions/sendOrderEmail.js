@@ -142,6 +142,37 @@ export async function handler(event) {
       </div>
     ` : '';
 
+    const upiLink = `upi://pay?pa=archanakoshe05@okicici&pn=Glow%20Naturals&am=${Number(total).toFixed(2)}&cu=INR&tn=Order%20${orderId.slice(0, 10).toUpperCase()}`;
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(upiLink)}`;
+
+    const paymentHtml = status?.toLowerCase() === 'pending' ? `
+      <div style="margin-top: 40px; padding: 30px; border: 2px solid #111111; text-align: center; background-color: #ffffff;">
+        <h3 style="margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 3px; color: #111111; font-weight: 700;">Complete Your Payment</h3>
+        <p style="margin: 0 0 25px 0; font-size: 12px; color: #666666; text-transform: uppercase; letter-spacing: 1px;">Scan with GPay or any UPI app to pay <strong>₹${Number(total).toLocaleString('en-IN')}</strong></p>
+        
+        <div style="margin: 0 auto 25px; border: 1px solid #eeeeee; padding: 15px; display: inline-block;">
+          <img src="${qrCodeUrl}" width="180" height="180" style="display: block; border: none;" alt="Payment QR Code" />
+        </div>
+
+        <div style="margin-bottom: 25px;">
+          <a href="${upiLink}" style="display: inline-block; background-color: #111111; color: #ffffff; text-decoration: none; padding: 14px 30px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; border: 1px solid #111111;">Pay via UPI App (Mobile Only)</a>
+        </div>
+
+        <div style="margin-bottom: 25px;">
+          <p style="margin: 0 0 10px 0; font-size: 11px; color: #666666; text-transform: uppercase; letter-spacing: 1px;">Alternatively, pay on our website:</p>
+          <a href="https://glownaturals.in/profile" style="display: inline-block; background-color: #ffffff; color: #111111; text-decoration: underline; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">Go to Order History</a>
+        </div>
+
+        <p style="margin: 0; font-size: 11px; color: #999999; line-height: 1.5;">
+          UPI ID: <strong>archanakoshe05@okicici</strong><br />
+          Reference Note: <strong>#${orderId.slice(0, 10).toUpperCase()}</strong>
+        </p>
+        <p style="margin: 15px 0 0 0; font-size: 10px; color: #f59e0b; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+          If you have already paid, please ignore this request.
+        </p>
+      </div>
+    ` : '';
+
     const mailOptions = {
       from: `"Glow Naturals" <${process.env.EMAIL_USER}>`,
       to: [email, "glownaturalsnew02@gmail.com"],
@@ -183,6 +214,7 @@ export async function handler(event) {
               </p>
 
               ${trackingHtml}
+              ${paymentHtml}
 
               <!-- Order Summary Block -->
               <div style="margin-top: 40px; border: 1px solid #e5e5e5; background-color: #ffffff;">

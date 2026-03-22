@@ -28,6 +28,7 @@
         "npm:react-dom@^19.2.0",
         "npm:react-easy-crop@^5.5.6",
         "npm:react-icons@^5.5.0",
+        "npm:react-qr-code@^2.0.18",
         "npm:react-router-dom@^7.13.0",
         "npm:react@^19.2.0",
         "npm:tailwindcss@^4.2.0",

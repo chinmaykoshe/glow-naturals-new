@@ -40,6 +40,7 @@ function Footer() {
                                     <li><Link to="/about" className="hover:text-admin-primary transition">Our Story</Link></li>
                                     <li><Link to="/contact" className="hover:text-admin-primary transition">Contact</Link></li>
                                     <li><Link to="/profile" className="hover:text-admin-primary transition">My Account</Link></li>
+                                    <li><Link to="/help" className="hover:text-admin-primary transition text-admin-primary">Help & Support</Link></li>
                                 </ul>
                             </div>
                         </div>

@@ -9,6 +9,7 @@ import { HiMenuAlt2, HiOutlineSearch, HiX } from 'react-icons/hi';
 function AdminLayout() {
     const [isAdmin, setIsAdmin] = useState(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isMinimized, setIsMinimized] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const navigate = useNavigate();
     const location = useLocation();
@@ -106,9 +107,14 @@ function AdminLayout() {
                 </div>
             </header>
 
-            <AdminSidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+            <AdminSidebar 
+                isOpen={isSidebarOpen} 
+                setIsOpen={setIsSidebarOpen} 
+                isMinimized={isMinimized}
+                setIsMinimized={setIsMinimized}
+            />
 
-            <main className="flex-1 md:ml-64 bg-white min-h-screen">
+            <main className={`flex-1 ${isMinimized ? 'md:ml-20' : 'md:ml-64'} bg-white min-h-screen transition-all duration-300`}>
                 {/* Desktop Search Header */}
                 <header className="hidden md:flex sticky top-0 bg-white/80 backdrop-blur-md z-40 px-10 py-6 border-b border-gray-100 items-center justify-between gap-8">
                     <h2 className="text-[10px] font-bold uppercase tracking-[0.4em] text-gray-400 whitespace-nowrap">

@@ -4,6 +4,7 @@ import { db } from '../../firebase';
 import { supabase } from '../../supabase';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { HiOutlinePlus, HiOutlineTrash, HiOutlinePencilAlt, HiX, HiOutlineCloudUpload, HiOutlineCheckCircle } from 'react-icons/hi';
+import { useNotification } from '../../context/NotificationContext';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import Cropper from 'react-easy-crop';
 
@@ -48,6 +49,7 @@ function AdminProducts() {
     const [uploading, setUploading] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
+    const { showNotification, confirm: customConfirm } = useNotification();
 
     // Image Cropping States
     const [imageToCrop, setImageToCrop] = useState(null);
@@ -164,9 +166,11 @@ function AdminProducts() {
             setIsFormOpen(false);
             setEditingId(null);
             setFormProduct({ name: '', retailPrice: '', category: '', imageUrl: '', stock: 10, description: '', ingredients: '', howToUse: '', bestseller: false, newArrival: false });
+            showNotification(editingId ? "Product updated successfully." : "New creation added to collection.", "success");
             fetchProducts();
         } catch (error) {
             console.error("Error saving product:", error);
+            showNotification("Unable to save product. Please try again.", "error");
         }
     };
 
@@ -202,17 +206,19 @@ function AdminProducts() {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm("Archive this product permanently?")) {
-            const product = products.find(p => p.id === id);
-            if (product) {
-                const imgToDelete = product.imageUrl || product.image;
-                if (imgToDelete) {
-                    await deleteSupabaseImage(imgToDelete);
-                }
+        const proceed = await customConfirm("Are you sure you want to archive this product permanently?", "Archive Product");
+        if (!proceed) return;
+
+        const product = products.find(p => p.id === id);
+        if (product) {
+            const imgToDelete = product.imageUrl || product.image;
+            if (imgToDelete) {
+                await deleteSupabaseImage(imgToDelete);
             }
-            await deleteDoc(doc(db, "products", id));
-            fetchProducts();
         }
+        await deleteDoc(doc(db, "products", id));
+        showNotification("Product archived successfully.", "success");
+        fetchProducts();
     };
 
     const handleImageSelect = (e) => {
@@ -289,9 +295,10 @@ function AdminProducts() {
 
             setFormProduct({ ...formProduct, imageUrl: publicUrl });
             setImageToCrop(null);
+            showNotification("Image uploaded and synced to cloud.", "success");
         } catch (error) {
             console.error('Error uploading cropped image:', error);
-            alert('Error: ' + error.message);
+            showNotification(error.message, "error");
         } finally {
             setUploading(false);
         }

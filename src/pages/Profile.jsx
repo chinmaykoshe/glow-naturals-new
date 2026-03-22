@@ -3,7 +3,9 @@ import { auth, db } from "../firebase";
 import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { useNavigate, Link } from "react-router-dom";
-import { HiOutlineX } from "react-icons/hi";
+import { HiOutlineX, HiOutlineDownload, HiOutlineChevronRight } from "react-icons/hi";
+import { useNotification } from "../context/NotificationContext";
+import QRCode from "react-qr-code";
 
 function Profile() {
     const [user, setUser] = useState(null);
@@ -17,7 +19,18 @@ function Profile() {
         phone: "",
         address: ""
     });
+    const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState(null);
     const navigate = useNavigate();
+    const { showNotification, confirm: customConfirm } = useNotification();
+
+    const generateUPILink = (order) => {
+        const upiId = "archanakoshe05@okicici";
+        const merchantName = encodeURIComponent("Glow Naturals");
+        const amount = order.totalAmount || order.total || 0;
+        const note = encodeURIComponent(`Order #${order.id.slice(0, 10).toUpperCase()}`);
+        return `upi://pay?pa=${upiId}&pn=${merchantName}&am=${amount.toFixed(2)}&cu=INR&tn=${note}`;
+    };
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -59,10 +72,10 @@ function Profile() {
             await updateDoc(userRef, formData);
             setProfileData({ ...profileData, ...formData });
             setIsModalOpen(false);
-            alert("Changes saved successfully.");
+            showNotification("Your profile details have been updated successfully.", "success");
         } catch (error) {
             console.error("Error updating details:", error);
-            alert("Failed to save changes.");
+            showNotification("Unable to save changes. Please try again later.", "error");
         } finally {
             setIsUpdating(false);
         }
@@ -71,6 +84,44 @@ function Profile() {
     const handleLogout = async () => {
         await signOut(auth);
         navigate("/");
+    };
+
+    const handleRequestCancellation = async (orderId, email, customerName) => {
+        const proceed = await customConfirm("requested to cancel order #" + orderId.slice(0, 10).toUpperCase(), "Order Cancellation");
+        if (!proceed) return;
+        
+        try {
+            const orderRef = doc(db, "orders", orderId);
+            await updateDoc(orderRef, {
+                cancellationRequested: true,
+                cancellationStatus: "pending"
+            });
+
+            // Trigger email notification
+            await fetch("/.netlify/functions/sendCancellationRequestEmail", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    email,
+                    orderId,
+                    customerName
+                }),
+            });
+
+            showNotification("Cancellation request submitted. We'll verify and process it soon.", "success");
+            
+            // Refresh orders
+            const q = query(collection(db, "orders"), where("userId", "==", user.uid));
+            const querySnapshot = await getDocs(q);
+            const orderList = [];
+            querySnapshot.forEach((doc) => {
+                orderList.push({ id: doc.id, ...doc.data() });
+            });
+            setOrders(orderList.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+        } catch (error) {
+            console.error("Error requesting cancellation:", error);
+            showNotification("Unable to submit cancellation request.", "error");
+        }
     };
 
     if (loading) return (
@@ -111,14 +162,21 @@ function Profile() {
                                     <p className="text-[11px] font-bold text-gray-300 uppercase tracking-widest mb-1">Name</p>
                                     <p className="text-sm font-medium text-gray-900">{profileData?.name || 'Not Set'}</p>
                                 </div>
-                                <div>
-                                    <p className="text-[11px] font-bold text-gray-300 uppercase tracking-widest mb-1">Email Address</p>
-                                    <p className="text-sm font-medium text-gray-900">{user?.email}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[11px] font-bold text-gray-300 uppercase tracking-widest mb-1">Phone Number</p>
-                                    <p className="text-sm font-medium text-gray-900">{profileData?.phone || 'Not Added'}</p>
-                                </div>
+                                <div className="flex items-center justify-between">
+                                     <div>
+                                         <p className="text-[11px] font-bold text-gray-300 uppercase tracking-widest mb-1">Email Address</p>
+                                         <p className="text-sm font-medium text-gray-900">{user?.email}</p>
+                                     </div>
+                                     {profileData?.emailVerified ? (
+                                         <span className="text-[9px] font-bold text-green-500 uppercase tracking-widest bg-green-50 px-2 py-1">Verified</span>
+                                     ) : (
+                                         <span className="text-[9px] font-bold text-orange-500 uppercase tracking-widest bg-orange-50 px-2 py-1">Pending</span>
+                                     )}
+                                 </div>
+                                 <div>
+                                     <p className="text-[11px] font-bold text-gray-300 uppercase tracking-widest mb-1">Phone Number</p>
+                                     <p className="text-sm font-medium text-gray-900">{profileData?.phone || 'Not Added'}</p>
+                                 </div>
                                 <div>
                                     <p className="text-[11px] font-bold text-gray-300 uppercase tracking-widest mb-1">Shipping Address</p>
                                     <p className="text-sm font-medium text-gray-900 leading-relaxed">{profileData?.address || 'Not added yet'}</p>
@@ -132,22 +190,33 @@ function Profile() {
 
                         <div className="space-y-6">
                             <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-gray-900 border-b border-gray-100 pb-4">Management</h3>
-                            <div className="flex flex-col gap-6">
-                                {profileData?.role === 'admin' && (
-                                    <Link to="/admin" className="text-xs font-bold uppercase tracking-widest text-admin-primary hover:text-black transition flex items-center gap-2">
-                                        <span className="w-1.5 h-1.5 bg-admin-primary"></span>
-                                        Admin Dashboard
+                                <div className="grid grid-cols-1 gap-4">
+                                    {profileData?.role === 'admin' && (
+                                        <Link 
+                                            to="/admin" 
+                                            className="w-full bg-admin-primary text-white py-4 px-6 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-black transition-all flex items-center justify-between group"
+                                        >
+                                            Admin Dashboard
+                                            <HiOutlineChevronRight className="group-hover:translate-x-1 transition-transform" />
+                                        </Link>
+                                    )}
+                                    <button
+                                        onClick={() => setIsModalOpen(true)}
+                                        className="w-full border border-gray-900 text-gray-900 py-4 px-6 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-gray-900 hover:text-white transition-all text-left flex items-center justify-between group"
+                                    >
+                                        Update Details
+                                        <HiOutlineChevronRight className="group-hover:translate-x-1 transition-transform" />
+                                    </button>
+                                    <Link
+                                        to="/help"
+                                        className="w-full border border-gray-200 text-gray-500 py-4 px-6 text-[10px] font-bold uppercase tracking-[0.2em] hover:border-gray-900 hover:text-gray-900 transition-all flex items-center justify-between group"
+                                    >
+                                        Help & Support
+                                        <HiOutlineChevronRight className="group-hover:translate-x-1 transition-transform" />
                                     </Link>
-                                )}
-                                <button
-                                    onClick={() => setIsModalOpen(true)}
-                                    className="text-left text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-black transition"
-                                >
-                                    Update Details
-                                </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
                     {/* Order History */}
                     <div className="lg:col-span-8">
@@ -171,9 +240,38 @@ function Profile() {
                                                         Placed on {order.createdAt?.seconds ? new Date(order.createdAt.seconds * 1000).toLocaleDateString() : 'Recent'}
                                                     </p>
                                                 </div>
-                                                <div className="text-left md:text-right">
+                                                <div className="text-left md:text-right space-y-2">
                                                     <p className="text-[11px] font-bold text-gray-300 uppercase tracking-widest mb-1">Total Amount</p>
                                                     <p className="text-xl font-bold text-gray-900">₹{(order.totalAmount || order.total)?.toLocaleString()}</p>
+                                                    
+                                                    {order.paymentMethod === "UPI / GPay" && order.status === "pending" && !order.cancellationRequested && (
+                                                        <button 
+                                                            onClick={() => {
+                                                                setSelectedOrder(order);
+                                                                setIsQRModalOpen(true);
+                                                            }}
+                                                            className="mt-4 w-full md:w-auto bg-gray-900 text-white px-6 py-3 text-[9px] font-bold uppercase tracking-[0.2em] hover:bg-admin-primary transition-all flex items-center justify-center gap-2"
+                                                        >
+                                                            Complete Payment
+                                                        </button>
+                                                    )}
+
+                                                    {order.status !== 'delivered' && order.status !== 'cancelled' && (
+                                                        <div className="pt-2">
+                                                            {order.cancellationRequested ? (
+                                                                <span className="text-[9px] font-bold text-orange-400 uppercase tracking-widest bg-orange-50 px-3 py-1 border border-orange-100 italic block text-center md:text-right">
+                                                                    Cancellation Requested
+                                                                </span>
+                                                            ) : (
+                                                                <button 
+                                                                    onClick={() => handleRequestCancellation(order.id, order.email, order.customerName || profileData?.name)}
+                                                                    className="mt-2 w-full md:w-auto border border-red-100 text-red-400 px-6 py-3 text-[9px] font-bold uppercase tracking-[0.2em] hover:bg-red-500 hover:text-white hover:border-red-500 transition-all"
+                                                                >
+                                                                    Request Cancellation
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -270,8 +368,9 @@ function Profile() {
                                     <input
                                         type="text"
                                         required
-                                        value={formData.displayName}
-                                        onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                                        name="name"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         className="w-full border-b border-gray-200 py-3 focus:outline-none focus:border-admin-primary transition-colors text-sm"
                                         placeholder="Your name"
                                     />
@@ -307,6 +406,73 @@ function Profile() {
                                     {isUpdating ? "Saving..." : "Save Changes"}
                                 </button>
                             </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* QR Payment Modal */}
+            {isQRModalOpen && selectedOrder && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center px-6">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsQRModalOpen(false)}></div>
+                    <div className="bg-white w-full max-w-md p-10 md:p-12 relative z-10 rounded-none shadow-2xl text-center space-y-8">
+                        <button
+                            onClick={() => setIsQRModalOpen(false)}
+                            className="absolute top-6 right-6 text-gray-400 hover:text-black transition"
+                        >
+                            <HiOutlineX size={20} />
+                        </button>
+
+                        <div className="space-y-2">
+                            <span className="text-gray-400 text-[9px] font-bold uppercase tracking-[0.4em]">Payment Information</span>
+                            <h2 className="text-3xl font-serif text-gray-900 tracking-tighter">Scan to Pay</h2>
+                            <p className="text-[10px] text-gray-400 uppercase tracking-widest leading-relaxed">
+                                Amount Due: <span className="text-admin-primary font-bold">₹{(selectedOrder.totalAmount || selectedOrder.total)?.toLocaleString()}</span>
+                            </p>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-6">
+                            <a 
+                                href={generateUPILink(selectedOrder)}
+                                className="p-6 bg-white border border-gray-100 shadow-sm"
+                                title="Open UPI App"
+                            >
+                                <QRCode 
+                                    value={generateUPILink(selectedOrder)}
+                                    size={180}
+                                    level="H"
+                                />
+                            </a>
+
+                            <a 
+                                href={generateUPILink(selectedOrder)}
+                                className="w-full max-w-[200px] py-4 bg-admin-primary text-white text-[10px] font-bold uppercase tracking-[0.2em] text-center shadow-lg active:scale-95 transition-all"
+                            >
+                                Pay via UPI App
+                            </a>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-center gap-3">
+                                    <p className="text-[10px] font-bold text-gray-900 uppercase tracking-widest font-mono">archanakoshe05@okicici</p>
+                                    <button 
+                                        onClick={() => {
+                                            navigator.clipboard.writeText("archanakoshe05@okicici");
+                                            showNotification("UPI ID copied to clipboard.", "info");
+                                        }}
+                                        className="text-[8px] font-bold text-admin-primary uppercase tracking-widest hover:underline"
+                                    >
+                                        Copy
+                                    </button>
+                                </div>
+                                <p className="text-[9px] italic text-gray-400 leading-relaxed">
+                                    Reference Order: <span className="font-bold text-gray-600">#{selectedOrder.id.slice(0, 10).toUpperCase()}</span>
+                                </p>
+                            </div>
+                            
+                            <p className="text-[8px] text-gray-400 uppercase tracking-[0.3em] font-bold">
+                                * Your order will be processed after payment confirmation
+                            </p>
                         </div>
                     </div>
                 </div>

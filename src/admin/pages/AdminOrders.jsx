@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
 import { collection, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { useLocation } from 'react-router-dom';
-import { HiOutlineX, HiOutlineDotsVertical, HiOutlineEye, HiOutlineTrash } from 'react-icons/hi';
+import { HiOutlineX, HiOutlineDotsVertical, HiOutlineEye, HiOutlineTrash, HiOutlineBell } from 'react-icons/hi';
+import { useNotification } from '../../context/NotificationContext';
 
 function AdminOrders() {
     const [orders, setOrders] = useState([]);
@@ -10,6 +11,7 @@ function AdminOrders() {
     const [loading, setLoading] = useState(true);
     const location = useLocation();
     const [selectedOrder, setSelectedOrder] = useState(null);
+    const { showNotification, confirm: customConfirm } = useNotification();
 
     useEffect(() => {
         fetchOrders();
@@ -100,16 +102,53 @@ function AdminOrders() {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm("Archive this order permanently? This cannot be undone.")) {
-            try {
-                await deleteDoc(doc(db, "orders", id));
-                fetchOrders();
-                if (selectedOrder && selectedOrder.id === id) {
-                    setSelectedOrder(null);
-                }
-            } catch (error) {
-                console.error("Error deleting order:", error);
+        const proceed = await customConfirm("Are you sure you want to archive this order permanently? This cannot be undone.", "Archive Order");
+        if (!proceed) return;
+
+        try {
+            await deleteDoc(doc(db, "orders", id));
+            showNotification("Order archived successfully.", "success");
+            fetchOrders();
+            if (selectedOrder && selectedOrder.id === id) {
+                setSelectedOrder(null);
             }
+        } catch (error) {
+            console.error("Error deleting order:", error);
+            showNotification("Failed to archive order.", "error");
+        }
+    };
+
+    const sendReminder = async (order) => {
+        setIsActionLoading(true);
+        try {
+            await fetch('/.netlify/functions/sendOrderEmail', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: order.email,
+                    orderId: order.id,
+                    total: order.totalAmount || order.total,
+                    status: order.status || 'pending',
+                    customerName: order.customerName || `${order.firstName || ''} ${order.lastName || ''}`,
+                    items: order.items,
+                    shippingAddress: {
+                        address: order.shippingAddress?.address || order.address,
+                        city: order.shippingAddress?.city || order.city,
+                        pincode: order.shippingAddress?.pincode || order.pincode,
+                        phone: order.phone
+                    },
+                    trackingId: order.trackingId,
+                    deliveryPartner: order.deliveryPartner
+                })
+            });
+            showNotification("Status reminder sent to customer.", "success");
+        } catch (error) {
+            console.error("Failed to send reminder:", error);
+            showNotification("Unable to send email reminder.", "error");
+        } finally {
+            setIsActionLoading(false);
         }
     };
 
@@ -127,6 +166,8 @@ function AdminOrders() {
                         <tr>
                             <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Order Ref</th>
                             <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Customer</th>
+                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Products</th>
+                            <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Location</th>
                             <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Amount</th>
                             <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
                             <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Actions</th>
@@ -142,15 +183,48 @@ function AdminOrders() {
                                     </div>
                                     <div className="text-[10px] text-gray-400 uppercase tracking-tighter">{order.email}</div>
                                 </td>
+                                <td className="px-8 py-5">
+                                    <div className="space-y-2 max-w-[250px]">
+                                        {order.items && order.items.length > 0 ? (
+                                            order.items.map((item, idx) => (
+                                                <div key={idx} className="text-[10px] font-bold text-gray-900 uppercase leading-tight">
+                                                    {item.name}
+                                                    <span className="text-admin-primary ml-1 whitespace-nowrap">x{item.quantity}</span>
+                                                </div>
+                                            ))
+                                        ) : 'No items'}
+                                    </div>
+                                </td>
+                                <td className="px-8 py-5">
+                                    <div className="text-[10px] font-bold text-gray-900 uppercase">
+                                        {order.shippingAddress?.city || order.city || 'N/A'}
+                                    </div>
+                                    <div className="text-[10px] text-gray-400">{order.shippingAddress?.pincode || order.pincode || ''}</div>
+                                </td>
                                 <td className="px-8 py-5 text-sm font-bold text-gray-900">₹{(order.totalAmount || order.total)?.toLocaleString()}</td>
                                 <td className="px-8 py-5">
-                                    <span className={`text-[9px] font-bold px-3 py-1 uppercase tracking-widest ${order.status === 'delivered' ? 'bg-green-50 text-admin-primary' :
-                                        order.status === 'processing' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'
-                                        }`}>
-                                        {order.status || 'pending'}
-                                    </span>
+                                    <div className="flex flex-col gap-1">
+                                        <span className={`text-[9px] font-bold px-3 py-1 uppercase tracking-widest ${order.status === 'delivered' ? 'bg-green-50 text-admin-primary' :
+                                            order.status === 'processing' ? 'bg-blue-50 text-blue-600' : 
+                                            order.status === 'cancelled' ? 'bg-gray-100 text-gray-400' : 'bg-orange-50 text-orange-600'
+                                            }`}>
+                                            {order.status || 'pending'}
+                                        </span>
+                                        {order.cancellationRequested && (
+                                            <span className="text-[8px] font-bold text-red-500 uppercase tracking-widest text-center animate-pulse">Cancel requested</span>
+                                        )}
+                                    </div>
                                 </td>
                                 <td className="px-8 py-5 text-right flex justify-end gap-2">
+                                    {order.status === 'pending' && (
+                                        <button
+                                            onClick={() => sendReminder(order)}
+                                            className="text-orange-300 hover:text-orange-500 transition-all p-2"
+                                            title="Send Payment Reminder"
+                                        >
+                                            <HiOutlineBell size={18} />
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => setSelectedOrder(order)}
                                         className="text-gray-300 hover:text-admin-primary transition-all p-2"
@@ -182,22 +256,36 @@ function AdminOrders() {
                                 </p>
                                 <p className="text-[10px] text-gray-400 uppercase">{order.email}</p>
                             </div>
-                            <span className={`text-[8px] font-bold px-2 py-1 uppercase tracking-widest ${order.status === 'delivered' ? 'bg-green-50 text-admin-primary' :
-                                order.status === 'processing' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'
-                                }`}>
-                                {order.status || 'pending'}
-                            </span>
+                                 <div className="flex flex-col gap-1 items-end">
+                                    <span className={`text-[8px] font-bold px-2 py-1 uppercase tracking-widest ${order.status === 'delivered' ? 'bg-green-50 text-admin-primary' :
+                                        order.status === 'processing' ? 'bg-blue-50 text-blue-600' : 
+                                        order.status === 'cancelled' ? 'bg-gray-100 text-gray-400' : 'bg-orange-50 text-orange-600'
+                                        }`}>
+                                        {order.status || 'pending'}
+                                    </span>
+                                    {order.cancellationRequested && (
+                                        <span className="text-[7px] font-bold text-red-500 uppercase animate-pulse">Cancel Req</span>
+                                    )}
+                                </div>
                         </div>
 
                         <div className="flex items-center justify-between pt-4 border-t border-gray-50">
                             <p className="font-bold text-gray-900">₹{(order.totalAmount || order.total)?.toLocaleString()}</p>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => setSelectedOrder(order)}
-                                    className="p-2 text-gray-400 hover:text-admin-primary"
-                                >
-                                    <HiOutlineEye size={20} />
-                                </button>
+                                    <div className="flex gap-2">
+                                        {order.status === 'pending' && (
+                                            <button
+                                                onClick={() => sendReminder(order)}
+                                                className="p-2 text-orange-400"
+                                            >
+                                                <HiOutlineBell size={20} />
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => setSelectedOrder(order)}
+                                            className="p-2 text-gray-400 hover:text-admin-primary"
+                                        >
+                                            <HiOutlineEye size={20} />
+                                        </button>
                                 <button
                                     onClick={() => handleDelete(order.id)}
                                     className="p-2 text-gray-400 hover:text-red-500"
@@ -240,17 +328,40 @@ function AdminOrders() {
                                 </div>
 
                                 <div className="flex flex-wrap gap-2">
-                                    {['pending', 'shipped', 'delivered'].map((s) => (
+                                    {['pending', 'shipped', 'cancelled', 'delivered'].map((s) => (
                                         <button
                                             key={s}
-                                            disabled={isActionLoading || s === 'shipped'}
+                                            disabled={isActionLoading || (s === 'shipped' && selectedOrder.status === 'shipped')}
                                             onClick={() => updateStatus(selectedOrder.id, s)}
-                                            className={`flex-1 min-w-[30%] py-3 text-[9px] font-bold uppercase tracking-widest border transition-all ${selectedOrder.status === s ? 'bg-admin-primary border-admin-primary text-white' : 'bg-white border-gray-100 text-gray-400 hover:border-admin-primary'} ${s === 'shipped' ? 'cursor-default opacity-80' : ''}`}
+                                            className={`flex-1 min-w-[22%] py-3 text-[9px] font-bold uppercase tracking-widest border transition-all ${selectedOrder.status === s ? 'bg-admin-primary border-admin-primary text-white' : 'bg-white border-gray-100 text-gray-400 hover:border-admin-primary'} ${s === 'shipped' && selectedOrder.status === 'shipped' ? 'cursor-default' : ''}`}
                                         >
                                             {s === 'shipped' ? 'Handover' : s}
                                         </button>
                                     ))}
                                 </div>
+
+                                {selectedOrder.cancellationRequested && (
+                                    <div className="p-6 bg-red-50 border border-red-100 space-y-5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-1.5 h-6 bg-red-500"></div>
+                                            <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest">Cancellation Request Received</p>
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <button 
+                                                onClick={() => updateStatus(selectedOrder.id, 'cancelled', { cancellationRequested: false })}
+                                                className="flex-1 bg-red-600 text-white py-3 text-[9px] font-bold uppercase tracking-widest hover:bg-black transition-all"
+                                            >
+                                                Approve Cancellation
+                                            </button>
+                                            <button 
+                                                onClick={() => updateDoc(doc(db, "orders", selectedOrder.id), { cancellationRequested: false }).then(() => fetchOrders())}
+                                                className="flex-1 bg-white border border-gray-200 text-gray-500 py-3 text-[9px] font-bold uppercase tracking-widest hover:bg-gray-50 transition-all"
+                                            >
+                                                Deny Request
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {selectedOrder.status === 'pending' && (
                                     <div className="space-y-4 bg-gray-50 p-5 md:p-6 border border-gray-100">
@@ -283,7 +394,10 @@ function AdminOrders() {
                                         <button
                                             disabled={isActionLoading}
                                             onClick={() => {
-                                                if (!trackingInfo.carrier || !trackingInfo.trackingId) return alert("Please enter both Carrier and TID");
+                                                if (!trackingInfo.carrier || !trackingInfo.trackingId) {
+                                                     showNotification("Enter both carrier and tracking ID to proceed.", "info");
+                                                     return;
+                                                }
                                                 updateStatus(selectedOrder.id, 'shipped', {
                                                     deliveryPartner: trackingInfo.carrier,
                                                     trackingId: trackingInfo.trackingId
