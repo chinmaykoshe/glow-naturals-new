@@ -5,7 +5,7 @@ import { doc, getDoc } from "firebase/firestore";
 
 function Hero() {
     const [content, setContent] = useState({
-        bgImage: "https://images.unsplash.com/photo-1612817288484-6f916006741a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
+        bgImage: "https://uccwibdxircnufmvagzm.supabase.co/storage/v1/object/public/glow-naturals/hero/0.25301106198479983.png",
         title: "Pure Natural Care",
         subtitle: "Experience the trusted science of nature. Sustainably harvested plants for your daily routine.",
         buttonLabel: "Explore Collection",
