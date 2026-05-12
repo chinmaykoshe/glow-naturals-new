@@ -173,7 +173,7 @@ export async function handler(event) {
 
         <div style="margin-bottom: 25px;">
           <p style="margin: 0 0 10px 0; font-size: 11px; color: #666666; text-transform: uppercase; letter-spacing: 1px;">Alternatively, pay on our website:</p>
-          <a href="https://glownaturals.in/profile" style="display: inline-block; background-color: #ffffff; color: #111111; text-decoration: underline; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">Go to Order History</a>
+          <a href="https://glownaturals.netlify.app/profile" style="display: inline-block; background-color: #ffffff; color: #111111; text-decoration: underline; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">Go to Order History</a>
         </div>
 
         <p style="margin: 0; font-size: 11px; color: #999999; line-height: 1.5;">

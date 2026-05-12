@@ -54,7 +54,7 @@ function Contact() {
                                     </div>
                                     <div className="flex items-center gap-4 text-gray-400">
                                         <HiOutlineMail size={20} className="text-gray-900" />
-                                        <span className="text-sm font-medium">hello@glownaturals.in</span>
+                                        <span className="text-sm font-medium">hello@glownaturals.netlify.app</span>
                                     </div>
                                 </div>
                             </div>
