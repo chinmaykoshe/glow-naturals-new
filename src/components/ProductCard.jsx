@@ -79,7 +79,7 @@ function ProductCard({ product }) {
                         onClick={handleAddToCart}
                         className="w-full sm:w-auto bg-gray-900 text-white px-5 md:px-6 py-3 rounded-none text-[10px] md:text-[9px] font-bold uppercase tracking-[0.18em] hover:bg-admin-primary transition-all active:scale-95"
                     >
-                        Order Now
+                        Add to Cart
                     </button>
                 </div>
             </div>
