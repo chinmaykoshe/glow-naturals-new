@@ -6,6 +6,17 @@ const headers = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
+function getEmailConfig() {
+  const user = process.env.EMAIL_USER?.trim();
+  const pass = process.env.EMAIL_PASS?.replace(/\s+/g, '');
+
+  if (!user || !pass) {
+    return null;
+  }
+
+  return { user, pass };
+}
+
 export async function handler(event) {
   try {
     if (event.httpMethod === "OPTIONS") {
@@ -22,13 +33,24 @@ export async function handler(event) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: "Email and OTP are required" }) };
     }
 
+    const emailConfig = getEmailConfig();
+
+    if (!emailConfig) {
+      console.error("Environment variables EMAIL_USER or EMAIL_PASS are missing.");
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: "Email configuration missing on server" }),
+      };
+    }
+
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 465,
       secure: true,
       auth: {
-        user: process.env.EMAIL_USER.trim(),
-        pass: process.env.EMAIL_PASS.replace(/\s+/g, ''),
+        user: emailConfig.user,
+        pass: emailConfig.pass,
       },
       tls: {
         rejectUnauthorized: false
@@ -36,7 +58,7 @@ export async function handler(event) {
     });
 
     const mailOptions = {
-      from: `"Glow Naturals" <${process.env.EMAIL_USER}>`,
+      from: `"Glow Naturals" <${emailConfig.user}>`,
       to: email,
       subject: `Verify Your Account • Glow Naturals`,
       html: `

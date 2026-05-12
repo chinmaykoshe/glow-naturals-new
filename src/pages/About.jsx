@@ -29,7 +29,7 @@ function About() {
                     <div className="relative">
                         <div className="aspect-[4/5] overflow-hidden bg-gray-50 border border-gray-100">
                             <img
-                                src="https://images.unsplash.com/photo-1556228720-195a672e8a03?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                                src="/default-images/aboutimage.png"
                                 alt="Natural ingredients"
                                 className="w-full h-full object-cover grayscale-[0.2] transition-all duration-1000"
                             />
